@@ -19,8 +19,10 @@ export async function getOrder(req: Request, res: Response, next: NextFunction) 
 }
 
 export async function placeOrder(req: Request, res: Response, next: NextFunction) {
+	const { payload } = req.body;
+
 	try {
-		res.status(200).json("Place new order controller working");
+		res.status(200).json({ payload });
 	} catch (error: any) {
 		next(error);
 	}
