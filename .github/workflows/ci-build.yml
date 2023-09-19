@@ -50,8 +50,8 @@ jobs:
      # - name: Start the application # commented cos script starts server forever
      #   run: npm start
 
-      - name: Start development server
-        run: npm run dev
+     # - name: Start development server 
+     #   run: npm run dev # commented cos it wants null or prod or production not dev
       
       - name: Run tests
         run: npm test
