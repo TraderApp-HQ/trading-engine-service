@@ -4,7 +4,6 @@ on:
 #  push:
 #    branches:
 #      - dev
-on:
   workflow_dispatch: # setting for manual runs of the pipeline. 
 
 jobs:
@@ -55,10 +54,10 @@ jobs:
         run: npm test
   # test is now complete. we hv built d app, started the server and ran unit n lint tests.      
         
-  docker-build and push to ecr:
+  docker build and push to ecr:
     runs-on: ubuntu-latest
 
-     steps:
+    steps:
 
     - name: Check out code
       uses: actions/checkout@v2
