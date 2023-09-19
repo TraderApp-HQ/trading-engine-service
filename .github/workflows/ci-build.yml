@@ -54,7 +54,7 @@ jobs:
         run: npm test
   # test is now complete. we hv built d app, started the server and ran unit n lint tests.      
         
-  docker-build and push to ecr:
+  docker_build_and_push_to_ecr:
     runs-on: ubuntu-latest
 
     steps:
