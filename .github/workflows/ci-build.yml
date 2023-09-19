@@ -47,8 +47,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Start the application
-        run: npm start
+     # - name: Start the application # commented cos script starts server forever
+     #   run: npm start
 
       - name: Start development server
         run: npm run dev
@@ -90,7 +90,6 @@ jobs:
       env:   # here we r creating env vars n assigning values to them.
         ECR_REGISTRY: ${{ steps.ecr-login-id.outputs.registry }}
         ECR_REPOSITORY: trading-engine-service-test
-        IMAGE_TAG: latest
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
