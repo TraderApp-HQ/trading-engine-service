@@ -83,8 +83,9 @@ jobs:
     - name: Generate Version Number
       id: version
       run: | # let's generate a version tag in the format: DDMonYYYYHHMM
-        IMAGE_TAG=$(date +'%d%b%Y%H%M')
+        IMAGE_TAG = $(date +'%d%b%Y%H%M')
         echo "::set-output name=version::$IMAGE_TAG"
+        echo $IMAGE_TAG
 
     - name: Build Docker Image, tag and push image to Amazon ECR
       env:   # here we r creating env vars n assigning values to them.
