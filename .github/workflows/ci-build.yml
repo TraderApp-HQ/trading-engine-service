@@ -1,13 +1,17 @@
 name: trading-engine-ci-pipeline
 
 on:
-#  push:
-#    branches:
-#      - dev
-  workflow_dispatch: # setting for manual runs of the pipeline. 
+  # Uncomment and adjust the following lines for trigger events like pushes or pull requests.
+  # push:
+  #   branches:
+  #     - dev
+  #     - pull_request
+  workflow_dispatch: # setting for manual runs of the pipeline.
 
 jobs:
   build:   # this is the first job - to build the application first with npm
+    # this build is not needed, being used cos I just want to use node v18.
+    # by default, github runners come with node 16.
     runs-on: ubuntu-latest
 
     steps:
@@ -22,39 +26,53 @@ jobs:
       - name: Install dependencies  # third step is to install dependencies
         run: npm install
 
-      - name: Build      # fourth step is to test by trying to build node 
-      # - this uses the build script in the script file
+      - name: Build
         run: npm run build
 
-      - name: Start       # last step is to test by trying to start node 
-      # - this uses the start script in the script file in package.json
-        run: npm start
-        continue-on-error: true
-
-  test: # Another Job. Here we perform the unit n linting test.
+  start:  # testing the server can start - using the start script in package.json
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: 18
+      - name: Start the application
+        run: npm start
 
-      - name: Install dependencies
-        run: npm install --only=dev # here we r specifying & using just the development dependencies
-# as specified in devDependencies in the package.json file.
+  dev: 
+    runs-on: ubuntu-latest
 
-      - name: Lint           #fourth step in this JOB - performing lint test with Eslint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Start development server
+        run: npm run dev
+
+  test: #let's run unit test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Run tests
+        run: npm test
+
+  lint: #lets perform lint test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Run linter
         run: npm run lint
 
-      - name: Unit Tests       
-        run: npm test
   # test is now complete. we hv built d app, started the server and ran unit n lint tests.      
-        
-  docker_build_and_push_to_ecr:
+  # now lets build n push the image to ECR
+  
+  push:
     runs-on: ubuntu-latest
 
     steps:
@@ -72,12 +90,19 @@ jobs:
     - name: Login to Amazon ECR
       id: ecr-login-id #this is an id for this step. So u can use the id to ref d step later in d workflow.
       uses: aws-actions/amazon-ecr-login@v1
+      
+    - name: Generate Version Number
+      id: version
+      run: |
+        # let's generate a version tag in the format: DDMonYYYYHHMMSS
+        IMAGE_TAG=$(date +'%d%b%Y%H%M%S')
+        echo "::set-output name=version::$IMAGE_TAG"
 
     - name: Build Docker Image, tag and push image to Amazon ECR
       env:   # here we r creating env vars n assigning values to them.
         ECR_REGISTRY: ${{ steps.ecr-login-id.outputs.registry }}
         ECR_REPOSITORY: trading-engine-service-test
-        IMAGE_TAG: latest
+        
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
