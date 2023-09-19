@@ -87,7 +87,7 @@ jobs:
         Temp_Tag: ${{github.run_id}}
         echo "::set-output name=version::$IMAGE_TAG"
         echo $IMAGE_TAG
-        echo $Temp_Tag
+        echo "My tag is $Temp_Tag"
 
     - name: Build Docker Image, tag and push image to Amazon ECR
       env:   # here we r creating env vars n assigning values to them.
