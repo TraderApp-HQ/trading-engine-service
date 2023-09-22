@@ -89,7 +89,7 @@ jobs:
        # IMAGE_TAG: ${{github.run_id}}
         IMAGE_TAG: ${{github.run_number}}
         ECS_CLUSTER: trading-engine-service-ecs-cluster-test    # Amazon ECS cluster name
-        ECS_TASK_DEFINITION: .github/workflows/trading-engine-task-def-family-test-revision1.json   # task def path
+        ECS_TASK_DEFINITION: .github/workflows/task-definition.json   # task def path
         ECS_SERVICE: trading-engine-ecs-cluster-service-test # Your Amazon ECS service name
         CONTAINER_NAME: trading-engine-container-test     # set this to the name of the container in the
         # containerDefinitions section of your task definition
