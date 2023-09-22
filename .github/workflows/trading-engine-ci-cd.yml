@@ -61,7 +61,7 @@ jobs:
 
     # test is now complete. we hv built d app, started the server and ran unit n lint tests.      
         
-  docker_build_and_push_to_ecr:
+  docker_build_then_push_to_ecr_and_ecs:
     runs-on: ubuntu-latest
 
     steps:
@@ -80,7 +80,7 @@ jobs:
       id: ecr-login-id #this is an id for this step. So u can use the id to ref d step later in d workflow.
       uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build Docker Image, tag and push image to Amazon ECR 
+    - name: Build Docker Image, tag and push image to ECR
       # THIS IS WHERE PROD VARS N TEST VARS ARE DEFINED N USED BASED ON BRANCH RUNNING FROM
       id: builder_pusher
       env:   # here we r creating env vars n assigning values to them.
