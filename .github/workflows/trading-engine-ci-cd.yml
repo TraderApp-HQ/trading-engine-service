@@ -1,0 +1,118 @@
+name: trading-engine-ci-pipeline
+
+on:
+  # Uncomment and adjust the following lines for trigger events like pushes or pull requests.
+  # push:
+  #   branches:
+  #     - dev
+  #     - pull_request
+  workflow_dispatch: # setting for manual runs of the pipeline.
+
+jobs:
+  build:   # this is the first job - to build the application first with npm
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code # first step in this build JOB is to checkout code from branch
+        uses: actions/checkout@v2
+
+      - name: Install Node.js    # second step is to set up environment for node build
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16.15
+
+      - name: Install dependencies  # third step is to install dependencies
+        run: npm install
+
+      - name: Build      # fourth step is to test by trying to build node 
+      # - this uses the build script in the script file
+        run: npm run build
+
+  test: # Another Job. Here we start the server, run the build n perform unit n linting test.
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16.15
+
+      - name: Install dependencies
+        run: npm install --only=dev # here we r specifying & using just the development dependencies
+    # as specified in devDependencies in the package.json file.
+
+      - name: Build
+        run: npm run build
+
+     # - name: Start the application # commented cos script starts server forever
+     #   run: npm start
+
+     # - name: Start development server 
+     #   run: npm run dev # commented cos it wants null or prod or production not dev
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Run linter
+        run: npm run lint
+
+    # test is now complete. we hv built d app, started the server and ran unit n lint tests.      
+        
+  docker_build_and_push_to_ecr:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Check out code
+      uses: actions/checkout@v2
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-central-1
+
+    - name: Login to Amazon ECR
+      id: ecr-login-id #this is an id for this step. So u can use the id to ref d step later in d workflow.
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build Docker Image, tag and push image to Amazon ECR 
+      # THIS IS WHERE PROD VARS N TEST VARS ARE DEFINED N USED BASED ON BRANCH RUNNING FROM
+      id: builder_pusher
+      env:   # here we r creating env vars n assigning values to them.
+        ECR_REGISTRY: ${{ steps.ecr-login-id.outputs.registry }}
+        ECR_REPOSITORY: trading-engine-service-test
+       # IMAGE_TAG: ${{github.run_id}}
+        IMAGE_TAG: ${{github.run_number}}
+        ECS_CLUSTER: trading-engine-service-ecs-cluster-test    # Amazon ECS cluster name
+        ECS_TASK_DEFINITION: .github/workflows/trading-engine-task-def-family-test-revision1.json   # task def path
+        ECS_SERVICE: trading-engine-ecs-cluster-service-test # Your Amazon ECS service name
+        CONTAINER_NAME: trading-engine-container-test     # set this to the name of the container in the
+        # containerDefinitions section of your task definition
+        
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=built_image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+#end of CI
+#start CD:
+    # start cd: right after push to ecr
+    - name: Put the newly built image into the ECS task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: ${{ env.ECS_TASK_DEFINITION }}
+        container-name: ${{ env.CONTAINER_NAME }}
+        image: ${{ steps.builder_pusher.outputs.built_image }}
+
+    - name: Deploy the ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: ${{ env.ECS_SERVICE }}
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true
