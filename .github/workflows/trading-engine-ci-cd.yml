@@ -89,7 +89,6 @@ jobs:
        # IMAGE_TAG: ${{github.run_id}}
         IMAGE_TAG: ${{github.run_number}}
         ECS_CLUSTER: trading-engine-service-ecs-cluster-test    # Amazon ECS cluster name
-        ECS_TASK_DEFINITION: .github/workflows/task-definition.json   # task def path
         ECS_SERVICE: trading-engine-taskdef-service # Your Amazon ECS service name
         CONTAINER_NAME: trading-engine-container-test     # set this to the name of the container in the
         # containerDefinitions section of your task definition
@@ -100,12 +99,17 @@ jobs:
         echo "::set-output name=built_image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 #end of CI
 #start CD:
+    - name: Download task definition
+      run: |
+          aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEF_ARN }} \
+          --query taskDefinition > task-definition.json
+
     # start cd: right after push to ecr
     - name: Put the newly built image into the ECS task definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
-        task-definition: ${{ env.ECS_TASK_DEFINITION }}
+        task-definition: task-definition.json
         container-name: ${{ env.CONTAINER_NAME }}
         image: ${{ steps.builder_pusher.outputs.built_image }}
 
