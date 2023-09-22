@@ -90,8 +90,7 @@ jobs:
         IMAGE_TAG: ${{github.run_number}}
         ECS_CLUSTER: trading-engine-service-ecs-cluster-test    # Amazon ECS cluster name
         ECS_SERVICE: trading-engine-taskdef-service # Your Amazon ECS service name
-        CONTAINER_NAME: trading-engine-container-test     # set this to the name of the container in the
-        # containerDefinitions section of your task definition
+       # containerDefinitions section of your task definition
         
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
@@ -110,7 +109,7 @@ jobs:
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
         task-definition: task-definition.json
-        container-name: ${{ env.CONTAINER_NAME }}
+        container-name: ${{ secrets.CONTAINER_NAME }}
         image: ${{ steps.builder_pusher.outputs.built_image }}
 
     - name: Deploy the ECS task definition
