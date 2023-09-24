@@ -86,11 +86,9 @@ jobs:
       env:   # here we r creating env vars n assigning values to them.
         ECR_REGISTRY: ${{ steps.ecr-login-id.outputs.registry }}
         ECR_REPOSITORY: trading-engine-service-test
-       # IMAGE_TAG: ${{github.run_id}}
-        IMAGE_TAG: ${{github.run_number}}
+        IMAGE_TAG: ${{github.run_id}}
         ECS_CLUSTER: trading-engine-service-ecs-cluster-test    # Amazon ECS cluster name
         ECS_SERVICE: trading-engine-taskdef-service # Your Amazon ECS service name
-       # containerDefinitions section of your task definition
         
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
