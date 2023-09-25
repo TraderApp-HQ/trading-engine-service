@@ -5,6 +5,7 @@ on:
   push:
      branches:
        - dev
+       - teez
        - pull_request
   workflow_dispatch: # setting for manual runs of the pipeline.
 
