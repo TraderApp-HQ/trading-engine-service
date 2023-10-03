@@ -55,7 +55,7 @@ jobs:
         ECR_REPOSITORY: trading-engine-service-test
         IMAGE_TAG: ${{github.run_id}}
         ECS_CLUSTER: trading-engine-service-cluster-test   # Amazon ECS cluster name
-        ECS_SERVICE: trading-engine-service-test-ecs-service # Your Amazon ECS service name
+        ECS_SERVICE: tradingengine-srvc-ecs-service-1 # Your Amazon ECS service name
 
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
