@@ -1,11 +1,10 @@
-name: trading-engine-ci-pipeline
+name: users-service-cicd-pipeline
 
 on:
-  # Uncomment and adjust the following lines for trigger events like pushes or pull requests.
-  # push:
-  #   branches:
-  #     - dev
-  #     - pull_request
+  push:
+     branches:
+       - dev
+       - pull_request
   workflow_dispatch: # setting for manual runs of the pipeline.
 
 jobs:
@@ -28,40 +27,8 @@ jobs:
       # - this uses the build script in the script file
         run: npm run build
 
-  test: # Another Job. Here we start the server, run the build n perform unit n linting test.
-    runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Install Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: 16.15
-
-      - name: Install dependencies
-        run: npm install --only=dev # here we r specifying & using just the development dependencies
-    # as specified in devDependencies in the package.json file.
-
-      - name: Build
-        run: npm run build
-
-     # - name: Start the application # commented cos script starts server forever
-     #   run: npm start
-
-     # - name: Start development server 
-     #   run: npm run dev # commented cos it wants null or prod or production not dev
-      
-      - name: Run tests
-        run: npm test
-      
-      - name: Run linter
-        run: npm run lint
-
-    # test is now complete. we hv built d app, started the server and ran unit n lint tests.      
-        
-  docker_build_then_push_to_ecr_and_ecs:
+  docker_build_then_push_to_ecr_and_ecs: #second job
     runs-on: ubuntu-latest
 
     steps:
@@ -74,7 +41,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: eu-central-1
+        aws-region: eu-west-1
 
     - name: Login to Amazon ECR
       id: ecr-login-id #this is an id for this step. So u can use the id to ref d step later in d workflow.
@@ -87,21 +54,21 @@ jobs:
         ECR_REGISTRY: ${{ steps.ecr-login-id.outputs.registry }}
         ECR_REPOSITORY: trading-engine-service-test
         IMAGE_TAG: ${{github.run_id}}
-        ECS_CLUSTER: trading-engine-service-ecs-cluster-test    # Amazon ECS cluster name
-        ECS_SERVICE: trading-engine-taskdef-service # Your Amazon ECS service name
-        
+        ECS_CLUSTER: trading-engine-service-cluster-test   # Amazon ECS cluster name
+        ECS_SERVICE: trading-engine-service-test-ecs-service # Your Amazon ECS service name
+
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=built_image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 #end of CI
-#start CD:
+
+#start CD: first is to download the task definition.json file from ECS.
     - name: Download task definition
       run: |
-          aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEF_ARN }} \
+          aws ecs describe-task-definition --task-definition ${{ secrets.USER_SRVC_TASK_DEF_ARN }} \
           --query taskDefinition > task-definition.json
 
-    # start cd: right after push to ecr
     - name: Put the newly built image into the ECS task definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
