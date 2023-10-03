@@ -74,7 +74,7 @@ jobs:
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
         task-definition: task-definition.json
-        container-name: ${{ secrets.CONTAINER_NAME }}
+        container-name: ${{ secrets.TRADINGENGINE_SRVC_CONTAINER_NAME }}
         image: ${{ steps.builder_pusher.outputs.built_image }}
 
     - name: Deploy the ECS task definition
