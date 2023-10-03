@@ -66,7 +66,7 @@ jobs:
 #start CD: first is to download the task definition.json file from ECS.
     - name: Download task definition
       run: |
-          aws ecs describe-task-definition --task-definition ${{ secrets.USER_SRVC_TASK_DEF_ARN }} \
+          aws ecs describe-task-definition --task-definition ${{ secrets.TRADINGENGINE_SRVC_TASK_DEF_ARN }} \
           --query taskDefinition > task-definition.json
 
     - name: Put the newly built image into the ECS task definition
