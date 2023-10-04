@@ -53,14 +53,14 @@ jobs:
       id: builder_pusher
       env:   # here we r creating env vars n assigning values to them.
         ECR_REGISTRY: ${{ steps.ecr-login-id.outputs.registry }}
-        ECR_REPOSITORY: signals-service-test
+        ECR_REPOSITORY: trading-engine-service-test
         IMAGE_TAG: ${{github.run_id}}
 #        ECS_CLUSTER: traderapp_dev   # Amazon ECS cluster name
 #        ECS_SERVICE: signalssrvc-ecs-service-test # Your Amazon ECS service name
 
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        echo "Docker Image build is completed."
+        echo "Image build is completed."
 #       docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 #       echo "::set-output name=built_image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
          
