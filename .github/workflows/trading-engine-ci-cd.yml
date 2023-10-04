@@ -2,8 +2,8 @@ name: trading-engine-service-cicd-pipeline
 
 on:
   push:
-#     branches:
-#       - dev
+     branches:
+       - dev
 #       - pull_request
   workflow_dispatch: # setting for manual runs of the pipeline.
 
