@@ -28,7 +28,7 @@ jobs:
         run: npm run build
 
 
-  docker_build_then_push_to_ecr_and_ecs:
+  Test_if_the_update_can_build_into_an_image:
     runs-on: ubuntu-latest
 
     steps:
