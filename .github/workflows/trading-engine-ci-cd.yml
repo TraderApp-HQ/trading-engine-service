@@ -54,7 +54,7 @@ jobs:
         ECR_REGISTRY: ${{ steps.ecr-login-id.outputs.registry }}
         ECR_REPOSITORY: trading-engine-service-test
         IMAGE_TAG: ${{github.run_id}}
-        ECS_CLUSTER: trading-engine-service-cluster-test   # Amazon ECS cluster name
+        ECS_CLUSTER: traderapp_dev   # Amazon ECS cluster name
         ECS_SERVICE: tradingengine-srvc-ecs-service-1 # Your Amazon ECS service name
 
       run: |
