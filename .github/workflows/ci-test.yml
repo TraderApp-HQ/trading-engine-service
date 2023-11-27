@@ -10,6 +10,8 @@ on:
 jobs:
   build:   # this is the first job - to build the application first with npm
     runs-on: ubuntu-latest
+    environment:
+      name: development
 
     steps:
       - name: Checkout code # first step in this build JOB is to checkout code from branch
@@ -21,12 +23,22 @@ jobs:
           node-version: 16.15
 
       - name: Install dependencies  # third step is to install dependencies
-        run: npm install
+        run: npm install --force
 
       - name: Build      # fourth step is to test by trying to build node 
       # - this uses the build script in the script file
         run: npm run build
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+
+      - name: Start # fourth step is to test by trying to start server
+              # - this uses the startscript in the script file
+        run: npm run start &
 
   Test_if_the_update_can_build_into_an_image:
     runs-on: ubuntu-latest
