@@ -1,0 +1,101 @@
+name: trading-engine-service-cicd-staging
+
+on:
+  push:
+     branches:
+       - staging
+#       - pull_request
+  workflow_dispatch: # setting for manual runs of the pipeline.
+
+jobs:
+  build:   # this is the first job - to build the application first with npm
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+
+    steps:
+      - name: Checkout code # first step in this build JOB is to checkout code from branch
+        uses: actions/checkout@v2
+
+      - name: Install Node.js    # second step is to set up environment for node build
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16.15
+
+      - name: Install dependencies  # third step is to install dependencies
+        run: npm install --force
+
+      - name: Build  # fourth step is to test by trying to build node 
+      # - this uses the build script in the script file
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+
+      - name: Start # fourth step is to test by trying to start server
+              # - this uses the startscript in the script file
+        run: npm run start &
+
+
+  docker_build_then_push_to_ecr_and_ecs: #second job
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+
+    steps:
+
+    - name: Check out code
+      uses: actions/checkout@v2
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-west-1
+
+    - name: Login to Amazon ECR
+      id: ecr-login-id #this is an id for this step. So u can use the id to ref d step later in d workflow.
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build Docker Image, tag and push image to ECR
+      # THIS IS WHERE PROD VARS N TEST VARS ARE DEFINED N USED BASED ON BRANCH RUNNING FROM
+      id: builder_pusher
+      env:   # here we r creating env vars n assigning values to them.
+        ECR_REGISTRY: ${{ steps.ecr-login-id.outputs.registry }}
+        ECR_REPOSITORY: trading-engine-service-test
+        IMAGE_TAG: ${{github.run_id}}
+        ECS_CLUSTER: traderapp_dev   # Amazon ECS cluster name
+        ECS_SERVICE: tradingengine-srvc-ecs-service-1 # Your Amazon ECS service name
+
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=built_image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+#end of CI
+
+#start CD: first is to download the task definition.json file from ECS.
+    - name: Download task definition
+      run: |
+          aws ecs describe-task-definition --task-definition ${{ secrets.TRADINGENGINE_SRVC_TASK_DEF_ARN }} \
+          --query taskDefinition > task-definition.json
+
+    - name: Put the newly built image into the ECS task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: task-definition.json
+        container-name: ${{ secrets.TRADINGENGINE_SRVC_CONTAINER_NAME }}
+        image: ${{ steps.builder_pusher.outputs.built_image }}
+
+    - name: Deploy the ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: ${{ env.ECS_SERVICE }}
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true
