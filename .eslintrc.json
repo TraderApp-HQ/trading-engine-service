@@ -23,5 +23,5 @@
 		"@typescript-eslint/dot-notation": "off",
 		"no-useless-catch": "off"
 	},
-	"ignorePatterns": ["*.json", "prisma/**"]
+	"ignorePatterns": ["*.json", "prisma/**", "Dockerfile"]
 }
