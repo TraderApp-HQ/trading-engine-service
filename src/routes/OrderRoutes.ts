@@ -5,10 +5,11 @@ import {
 	validateUserBalance,
 	validateUserTradingRules,
 } from "../middlewares/OrderMiddlewares";
+import { ROUTES } from "../config/constants";
 
 const router = Router();
 
-router.get("/", getOrders);
+router.get(ROUTES.getOrders, getOrders);
 router.get("/:id", getOrder);
 router.post("/", validateOrderRequest, validateUserBalance, validateUserTradingRules, placeOrder);
 router.delete("/:id", cancelOrder);
