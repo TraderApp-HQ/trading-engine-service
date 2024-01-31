@@ -1,0 +1,88 @@
+name: trading-engine-service-cicd-pipeline-dev
+
+on:
+    push:
+        branches:
+            - dev
+    # pull_request:
+    #   branches:
+    #     - dev
+    workflow_dispatch: # manual runs of the pipeline.
+
+jobs:
+    build: # this is the first job - to build the application first with npm
+        runs-on: ubuntu-latest
+        environment:
+            name: ${{ github.event_name == 'pull_request' && 'dev' || github.ref_name }}
+
+        steps:
+            - name: Checkout code from branch # 1st step in this build JOB.
+              uses: actions/checkout@v2
+
+            - name: Confirm Current Branch and Environment
+              run: echo "Current Branch and Environment is:" ${{ github.ref_name }}
+
+            - name: Install Node.js # set up environment for node build
+              uses: actions/setup-node@v2
+              with:
+                  node-version: 16.15
+
+            - name: Install dependencies # install dependencies by force
+              run: npm install --force
+
+            - name: Build # build the node
+              # - this uses the build script in the script file
+              run: npm run build
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v1
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: eu-west-1
+
+            - name: Start #  start the server
+              # - this uses the start script in the script file
+              run: npm run start &
+
+    docker_build_then_push_to_ecr_and_ecs:
+        needs: build
+        runs-on: ubuntu-latest
+        environment:
+            name: ${{ github.event_name == 'pull_request' && 'dev' || github.ref_name }}
+
+        steps:
+            - name: Check out code from branch again to build into Docker image
+              uses: actions/checkout@v2
+
+            - name: Reconfirm Current Branch and Environment
+              run: echo "Current Branch and Environment is:" ${{ github.ref_name }}
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v1
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: ${{vars.AWS_REGION}}
+
+            - name: Login to Amazon ECR
+              id: ecr-login-id #this is an id for this step. So u can use the id to ref d step later in d workflow.
+              uses: aws-actions/amazon-ecr-login@v1
+
+            - name: Build Docker image
+              run: docker build -t trading-engine-service-dev:$GITHUB_SHA .
+
+            - name: Tag Docker image with "latest"
+              run: |
+                  DOCKER_TAG=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/trading-engine-service-dev:latest
+                  docker tag trading-engine-service-dev:$GITHUB_SHA $DOCKER_TAG
+                  docker tag trading-engine-service-dev:$GITHUB_SHA ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/trading-engine-service-dev:$GITHUB_SHA
+
+            - name: Push Docker image to ECR
+              run: |
+                  docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/trading-engine-service-dev:latest
+                  docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/trading-engine-service-dev:$GITHUB_SHA
+
+            # - name: Update ECS service
+            #   run: |
+            #       aws ecs update-service --cluster traderapp_dev --service deploy_portfolios_service_dev --force-new-deployment

@@ -1,24 +1,45 @@
 import express, { Application, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { config } from "dotenv";
+import swaggerUi from "swagger-ui-express";
+import { logger, initSecrets, apiResponseHandler } from "@traderapp/shared-resources";
+import { ENVIRONMENTS, ResponseType } from "./config/constants";
+import secretsJson from "./env.json";
+import specs from "./utils/swagger";
 
-//import routes
+// import routes
 import { OrderRoutes } from "./routes";
+import initDatabase from "./config/database";
 
 config();
 
 const app: Application = express();
-const baseUri = "api/v1";
 
-const PORT = process.env.PORT || 8000;
+const env = process.env.NODE_ENV || "development";
+const suffix = ENVIRONMENTS[env] || "dev";
+const secretNames = ["common-secrets", "trading-engine-service-secrets"];
 
-app.listen(PORT, () => {
-	console.log(`Server listening at port ${PORT}`);
-	startServer();
-});
+initSecrets({
+	env: suffix,
+	secretNames,
+	secretsJson,
+})
+	.then(() => {
+		const port = process.env.PORT;
+		app.listen(port, async () => {
+			await initDatabase();
+			startServer();
+			logger.log(`Server listening at port ${port}`);
+			logger.log(`Docs available at http://localhost:${port}/api-docs`);
+		});
+	})
+	.catch((err) => {
+		logger.log(`Error getting secrets. === ${JSON.stringify(err)}`);
+		throw err;
+	});
 
 function startServer() {
-	//cors
+	// cors
 	app.use(
 		cors({
 			origin: "http://localhost:3000",
@@ -26,23 +47,25 @@ function startServer() {
 		})
 	);
 
-	//parse incoming requests
+	// parse incoming requests
 	app.use(express.urlencoded({ extended: true }));
 	app.use(express.json());
 
-	//api routes
-	app.use(`/${baseUri}/orders`, OrderRoutes);
+	// documentation
+	app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
-	//health check
-	app.get(`/${baseUri}/ping`, (_req, res) => {
+	// api routes
+	app.use(`/orders`, OrderRoutes);
+
+	// health check
+	app.get("/ping", (_req, res) => {
 		res.status(200).send({ message: "pong" });
 	});
 
-	//handle errors
+	// handle errors
 	app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-		const status = "ERROR";
-		let error = err.name;
-		let error_message = err.message;
+		let errorName = err.name;
+		let errorMessage = err.message;
 		let statusCode;
 
 		if (err.name === "ValidationError") statusCode = 400;
@@ -51,11 +74,17 @@ function startServer() {
 		else if (err.name === "NotFound") statusCode = 404;
 		else {
 			statusCode = 500;
-			error = "InternalServerError";
-			error_message = "Something went wrong. Please try again after a while.";
-			console.log("Error name: ", err.name, "Error message: ", err.message);
+			errorName = "InternalServerError";
+			errorMessage = "Something went wrong. Please try again after a while.";
+			console.log("Error name: ", errorName, "Error message: ", err.message);
 		}
 
-		res.status(statusCode).json({ status, error, error_message });
+		res.status(statusCode).json(
+			apiResponseHandler({
+				type: ResponseType.ERROR,
+				message: errorMessage,
+				object: err,
+			})
+		);
 	});
 }

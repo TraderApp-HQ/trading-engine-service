@@ -1,0 +1,190 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Exchanges {
+  id               Int                @id
+  slug             String             @db.VarChar(30)
+  exchangeAccounts ExchangeAccounts[]
+  signalPairs      SignalPairsData[]
+}
+
+model Currencies {
+  id                      Int                       @id
+  slug                    String                    @db.VarChar(30)
+  symbol                  String                    @db.VarChar(30)
+  signalPairs             SignalPairsData[]
+  exchangeAccountBalances ExchangeAccountBalances[]
+  orderBatches            OrderBatches[]
+  entries                 Entries[]
+  stopLoss                StopLoss[]
+  targetProfits           SignalTargets[]
+
+  @@index([symbol])
+}
+
+model ExchangeAccounts {
+  id              Int                       @id @default(autoincrement())
+  keys            String                    @db.Text
+  orderCount      Int                       @default(0)
+  maxOrderAllowed Int                       @default(50000)
+  exchangeId      Int
+  createdAt       DateTime                  @default(now())
+  exchange        Exchanges                 @relation(fields: [exchangeId], references: [id])
+  accountBalances ExchangeAccountBalances[]
+  orderBatches    OrderBatches[]
+}
+
+model ExchangeAccountBalances {
+  exchangeAccountId Int
+  currencyId        Int
+  balance           Decimal
+  balanceLocked     Decimal
+  exchangeAccount   ExchangeAccounts @relation(fields: [exchangeAccountId], references: [id])
+  currency          Currencies       @relation(fields: [currencyId], references: [id])
+
+  @@id([exchangeAccountId, currencyId])
+  @@index([balance])
+}
+
+model Signals {
+  id            String            @db.VarChar(255)
+  symbol        String            @db.VarChar(30)
+  type          SignalType
+  side          SignalSide
+  leverage      Int               @default(1)
+  targetProfits SignalTargets[]
+  signalPairs   SignalPairsData[]
+  orderBatches  OrderBatches[]
+  trades        Trades[]
+  entries       Entries[]
+  stopLoss      StopLoss[]
+
+  @@id([id])
+  @@unique([symbol])
+}
+
+model Entries {
+  signalId        String     @db.VarChar(255)
+  currencyId      Int
+  priceLowerBound Decimal
+  priceUpperBound Decimal
+  signal          Signals    @relation(fields: [signalId], references: [id])
+  currency        Currencies @relation(fields: [currencyId], references: [id])
+
+  @@id([signalId, currencyId])
+}
+
+model StopLoss {
+  signalId   String     @db.VarChar(255)
+  currencyId Int
+  price      Decimal
+  isReached  Boolean    @default(false)
+  signal     Signals    @relation(fields: [signalId], references: [id])
+  currency   Currencies @relation(fields: [currencyId], references: [id])
+
+  @@id([signalId, currencyId])
+}
+
+model SignalTargets {
+  signalId   String     @db.VarChar(255)
+  currencyId Int
+  price      Decimal
+  isReached  Boolean    @default(false)
+  signal     Signals    @relation(fields: [signalId], references: [id])
+  currency   Currencies @relation(fields: [currencyId], references: [id])
+
+  @@id([signalId, currencyId])
+  @@index([isReached, price])
+}
+
+model SignalPairsData {
+  exchangeId          Int
+  currencyId          Int
+  signalId            String     @db.VarChar(255)
+  pair                String     @db.VarChar(30)
+  price               Decimal
+  buyQuantityInRange  Decimal
+  sellQuantityInRange Decimal
+  maxOrderAmount      Decimal
+  maxOrderAmountLeft  Decimal
+  canEnterTrade       Boolean    @default(true)
+  exchange            Exchanges  @relation(fields: [exchangeId], references: [id])
+  currency            Currencies @relation(fields: [currencyId], references: [id])
+  signal              Signals    @relation(fields: [signalId], references: [id])
+
+  @@id([exchangeId, currencyId, signalId])
+  @@index([canEnterTrade, pair])
+}
+
+model OrderBatches {
+  id                String           @db.VarChar(255)
+  price             Decimal
+  type              OrderType
+  baseQuantity      Decimal
+  quoteTotal        Decimal
+  isPlaced          Boolean          @default(false)
+  isInserted        Boolean          @default(false)
+  exchangeOrderId   String           @db.VarChar(255)
+  createdAt         DateTime         @default(now())
+  exchangeAccountId Int
+  currencyId        Int
+  signalId          String           @db.VarChar(255)
+  exchangeAccount   ExchangeAccounts @relation(fields: [exchangeAccountId], references: [id])
+  currency          Currencies       @relation(fields: [currencyId], references: [id])
+  signal            Signals          @relation(fields: [signalId], references: [id])
+  orders            Orders[]
+
+  @@id([id])
+  @@index([isPlaced, isInserted])
+}
+
+model Trades {
+  id               String   @db.VarChar(255)
+  isCompleted      Boolean  @default(false)
+  baseQuantity     Decimal
+  baseQuantityLeft Decimal
+  quoteTotal       Decimal
+  signalId         String   @db.VarChar(255)
+  signal           Signals  @relation(fields: [signalId], references: [id])
+  orders           Orders[]
+
+  @@id([id])
+  @@index([isCompleted])
+}
+
+model Orders {
+  id           String       @db.VarChar(255)
+  baseQuantity Decimal
+  quoteTotal   Decimal
+  batchId      String       @db.VarChar(255)
+  tradeId      String       @db.VarChar(255)
+  batch        OrderBatches @relation(fields: [batchId], references: [id])
+  trade        Trades       @relation(fields: [tradeId], references: [id])
+
+  @@id([id])
+}
+
+enum SignalType {
+  SPOT
+  FUTURES
+  MARGIN
+}
+
+enum SignalSide {
+  LONG
+  SHORT
+}
+
+enum OrderType {
+  BUY
+  SELL
+}
