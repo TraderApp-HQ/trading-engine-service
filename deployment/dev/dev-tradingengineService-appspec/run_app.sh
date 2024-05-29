@@ -1,5 +1,5 @@
 #!/bin/bash
-SERVICE=assets
+SERVICE=tradingengine
 ENV=dev
 
 cd /home/ec2-user/

@@ -1,5 +1,5 @@
 #!/bin/bash
-SERVICE="tradingengineService"
+SERVICE="tradingengine"
 ENV="dev"
 
 # Update package manager and install required packages
