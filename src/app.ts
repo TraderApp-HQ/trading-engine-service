@@ -1,4 +1,5 @@
 import express, { Application, Request, Response, NextFunction } from "express";
+import mongoose from "mongoose";
 import cors from "cors";
 import { config } from "dotenv";
 import swaggerUi from "swagger-ui-express";
@@ -9,7 +10,6 @@ import specs from "./utils/swagger";
 
 // import routes
 import { OrderRoutes } from "./routes";
-import initDatabase from "./config/database";
 
 config();
 
@@ -19,24 +19,28 @@ const env = process.env.NODE_ENV || "development";
 const suffix = ENVIRONMENTS[env] || "dev";
 const secretNames = ["common-secrets", "trading-engine-service-secrets"];
 
-initSecrets({
-	env: suffix,
-	secretNames,
-	secretsJson,
-})
-	.then(() => {
-		const port = process.env.PORT;
-		app.listen(port, async () => {
-			await initDatabase();
-			startServer();
-			logger.log(`Server listening at port ${port}`);
-			logger.log(`Docs available at http://localhost:${port}/api-docs`);
-		});
-	})
-	.catch((err) => {
-		logger.log(`Error getting secrets. === ${JSON.stringify(err)}`);
-		throw err;
+(async function () {
+	await initSecrets({
+		env: suffix,
+		secretNames,
+		secretsJson,
 	});
+	const port = process.env.PORT;
+	const dbUrl = process.env.TRADING_ENGINE_SERVICE_DB_URL ?? "";
+	mongoose
+		.connect(dbUrl)
+		.then(() => {
+			app.listen(port, async () => {
+				startServer();
+				logger.log(`Server listening at port ${port}`);
+				logger.log(`Docs available at http://localhost:${port}/api-docs`);
+			});
+		})
+		.catch((err) => {
+			logger.log(`Error getting secrets. === ${JSON.stringify(err)}`);
+			throw err;
+		});
+})();
 
 function startServer() {
 	// cors
@@ -83,8 +87,14 @@ function startServer() {
 			apiResponseHandler({
 				type: ResponseType.ERROR,
 				message: errorMessage,
-				object: err,
+				object: {
+					statusCode,
+					errorName,
+					errorMessage,
+				},
 			})
 		);
 	});
 }
+
+export { app };
