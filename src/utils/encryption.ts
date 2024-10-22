@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 // Encryption settings
-const ENCRYPTION_KEY = process.env.API_SECRET_KEY || "api_secret_key"; // Must be 32 characters for AES-256
+const ENCRYPTION_KEY = process.env.API_SECRET_KEY || "4e5f6d78a23b456def78901234567890"; // Must be 32 characters for AES-256
 const IV_LENGTH = 16; // AES block size
 
 // Function to encrypt

@@ -9,7 +9,7 @@ import secretsJson from "./env.json";
 import specs from "./utils/swagger";
 
 // import routes
-import { OrderRoutes } from "./routes";
+import { OrderRoutes, UserTradingAccountRoutes } from "./routes";
 
 config();
 
@@ -60,6 +60,7 @@ function startServer() {
 
 	// api routes
 	app.use(`/orders`, OrderRoutes);
+	app.use(`/account`, UserTradingAccountRoutes);
 
 	// health check
 	app.get("/ping", (_req, res) => {

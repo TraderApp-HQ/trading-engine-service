@@ -29,6 +29,12 @@ export const DOC_RESPONSE = {
 	SUCCESS: apiDocumentationResponseObject("Success"),
 };
 
+export const ResponseMessage = {
+	CREATE_ACCOUNT: "Account created Successfully",
+	DELETE_ACCOUNT: "Account deleted Successfully",
+	ACCOUNT_NOT_FOUND: "Account not found",
+};
+
 export const ROUTES = {
 	getOrders: "/",
 };
