@@ -1,10 +1,11 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { AccountConnectionStatus } from "../config/enums";
+import { AccountConnectionStatus, Exchange } from "../config/enums";
 import { encrypt } from "../utils/encryption";
 
 export interface ITradingAccount extends Document {
 	userId: string; // Reference to the user who owns these credentials
-	exchange: string; // e.g., 'Binance'
+	exchange: Exchange;
+	exchangeId: string; // e.g., 'Binance'
 	apiKey: string;
 	apiSecret: string;
 	accountUserId: string; // Unique identifier returned by Binance
@@ -18,10 +19,15 @@ export interface ITradingAccount extends Document {
 	updatedAt: Date;
 }
 
-const TradingAccountSchema = new Schema<ITradingAccount>(
+const UserTradingAccountSchema = new Schema<ITradingAccount>(
 	{
 		userId: { type: String, required: true },
-		exchange: { type: String, required: true },
+		exchange: {
+			type: String,
+			enum: Exchange,
+			default: Exchange.BINANCE,
+		},
+		exchangeId: { type: String, required: true },
 		apiKey: { type: String, required: true },
 		apiSecret: { type: String, required: true },
 		accountUserId: { type: String, required: true },
@@ -39,8 +45,10 @@ const TradingAccountSchema = new Schema<ITradingAccount>(
 	{ timestamps: true }
 );
 
+UserTradingAccountSchema.index({ userId: 1, exchangeId: 1, accountUserId: 1, connectionStatus: 1 });
+
 // Pre-save hook to encrypt the apiKey and apiSecret
-TradingAccountSchema.pre("save", function (next) {
+UserTradingAccountSchema.pre("save", function (next) {
 	const account = this as ITradingAccount;
 
 	// Only encrypt if the fields are not already encrypted
@@ -55,4 +63,4 @@ TradingAccountSchema.pre("save", function (next) {
 	next();
 });
 
-export default mongoose.model<ITradingAccount>("TradingAccount", TradingAccountSchema);
+export default mongoose.model<ITradingAccount>("user-trading-account", UserTradingAccountSchema);
