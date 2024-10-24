@@ -13,6 +13,7 @@ export const ResponseType = {
 
 export const RESPONSE_TAGS = {
 	getOrders: "getOrders",
+	addAccount: "addAccount",
 };
 
 export const RESPONSE_CODES = {
@@ -37,4 +38,5 @@ export const ResponseMessage = {
 
 export const ROUTES = {
 	getOrders: "/",
+	addAccount: "/add",
 };

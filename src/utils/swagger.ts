@@ -2,6 +2,7 @@ import swaggerJsdoc from "swagger-jsdoc";
 
 import { ROUTES } from "../config/constants";
 import { createGetOrders } from "../documentation/orders";
+import { addAccount, addAccountBody } from "../documentation/userTradingAccount";
 
 const options: swaggerJsdoc.Options = {
 	swaggerDefinition: {
@@ -12,14 +13,16 @@ const options: swaggerJsdoc.Options = {
 			description: "API documentation for Trading Engine Service for TraderApp",
 		},
 		components: {
-			securitySchemas: {
+			securitySchemes: {
 				bearerAuth: {
 					type: "http",
 					scheme: "bearer",
 					bearerFormat: "JWT",
 				},
 			},
-			schemas: {},
+			schemas: {
+				addAccountBody,
+			},
 		},
 		security: [
 			{
@@ -28,6 +31,7 @@ const options: swaggerJsdoc.Options = {
 		],
 		paths: {
 			[`/orders${ROUTES.getOrders}`]: { get: createGetOrders },
+			[`/account${ROUTES.addAccount}`]: { post: addAccount },
 		},
 	},
 	apis: ["./src/routes/*.ts"], // Point to your route files
