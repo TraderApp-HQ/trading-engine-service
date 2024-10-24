@@ -8,7 +8,7 @@ interface IGetBinanceAccountInfo {
 	apiSecret: string;
 }
 
-export async function getAccountInfo({
+export async function getTradingAccountInfo({
 	apiKey,
 	apiSecret,
 }: IGetBinanceAccountInfo): Promise<Partial<IUserTradingAccount>> {

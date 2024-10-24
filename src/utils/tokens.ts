@@ -4,8 +4,8 @@ import { Request } from "express";
 
 config();
 
-export function verifyAccessToken(accessToken: string) {
-	const secret = process.env.ACCESS_TOKEN_SECRET as string;
+export async function verifyAccessToken(accessToken: string) {
+	const secret = process.env.ACCESS_TOKEN_SECRET ?? "";
 
 	return new Promise((resolve, reject) => {
 		JWT.verify(accessToken, secret, (err, payload) => {
@@ -15,7 +15,7 @@ export function verifyAccessToken(accessToken: string) {
 				reject(err);
 			}
 
-			//return payload
+			// return payload
 			resolve(payload);
 		});
 	});
@@ -23,17 +23,17 @@ export function verifyAccessToken(accessToken: string) {
 
 // A function to get accessToken from headers and verify it
 export async function checkUser(req: Request) {
-	//get accessToken from req headers
+	// get accessToken from req headers
 	const accessToken = req.headers.authorization?.split(" ")[1];
 
-	//check if access token was supplied
+	// check if access token was supplied
 	if (!accessToken) {
 		const error = new Error("Invalid Token");
 		error.name = "Unauthorized";
 		throw error;
 	}
 
-	//verify accessToken
+	// verify accessToken
 	const payload = await verifyAccessToken(accessToken);
 
 	return payload;

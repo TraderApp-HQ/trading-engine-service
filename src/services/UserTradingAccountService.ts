@@ -2,7 +2,7 @@ import UserTradingAccount, { IUserTradingAccount } from "../models/UserTradingAc
 import { updateAccountHealth } from "../utils/updateAccountHealth";
 
 // Create a new trading account
-export const createAccount = async (
+export const addAccount = async (
 	accountData: Partial<IUserTradingAccount>
 ): Promise<IUserTradingAccount> => {
 	const alreadyExistingAccount = await UserTradingAccount.findOne({
