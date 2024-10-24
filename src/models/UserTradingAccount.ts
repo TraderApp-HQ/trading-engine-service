@@ -4,8 +4,8 @@ import { encrypt } from "../utils/encryption";
 
 export interface IUserTradingAccount extends Document {
 	userId: string; // Reference to the user who owns these credentials
-	exchange: Exchange;
-	exchangeId: string; // e.g., 'Binance'
+	exchangeName: Exchange;
+	exchangeId: number; // e.g., 112
 	apiKey: string;
 	apiSecret: string;
 	accountUserId: string; // Unique identifier returned by Binance
@@ -15,19 +15,17 @@ export interface IUserTradingAccount extends Document {
 	isIpWhitelistingEnabled?: boolean;
 	connectionStatus: AccountConnectionStatus;
 	errorMessages: string[]; // List of reasons/messages for the unhealthy status
-	createdAt: Date;
-	updatedAt: Date;
 }
 
 const UserTradingAccountSchema = new Schema<IUserTradingAccount>(
 	{
 		userId: { type: String, required: true },
-		exchange: {
+		exchangeName: {
 			type: String,
 			enum: Exchange,
-			default: Exchange.BINANCE,
+			required: true,
 		},
-		exchangeId: { type: String, required: true },
+		exchangeId: { type: Number, required: true },
 		apiKey: { type: String, required: true },
 		apiSecret: { type: String, required: true },
 		accountUserId: { type: String, required: true },

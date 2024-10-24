@@ -4,6 +4,8 @@ import { createAccount, deleteAccount } from "../services/UserTradingAccountServ
 import { IUserTradingAccount } from "../models/UserTradingAccount";
 import { HttpStatus } from "../utils/httpStatus";
 import { ResponseMessage, ResponseType } from "../config/constants";
+import { getAccountInfo } from "../utils/getAccountInfo";
+import { encrypt } from "../utils/encryption";
 
 // Create a new trading account
 export const handleCreateAccount = async (
@@ -13,7 +15,22 @@ export const handleCreateAccount = async (
 ): Promise<void> => {
 	try {
 		const accountData = req.body as IUserTradingAccount;
-		const newAccount = await createAccount(accountData);
+		const { apiKey, apiSecret } = req.body;
+		const userAccoutInfo = await getAccountInfo({
+			apiKey: encrypt(apiKey as string),
+			apiSecret: encrypt(apiSecret as string),
+		});
+		const newAccount = await createAccount({ ...accountData, ...userAccoutInfo });
+
+		if (newAccount.errorMessages.length > 0) {
+			res.status(HttpStatus.CREATED).json(
+				apiResponseHandler({
+					type: ResponseType.ERROR,
+					object: newAccount.errorMessages,
+					message: ResponseMessage.CREATE_ACCOUNT,
+				})
+			);
+		}
 		res.status(HttpStatus.OK).json(
 			apiResponseHandler({
 				type: ResponseType.SUCCESS,
