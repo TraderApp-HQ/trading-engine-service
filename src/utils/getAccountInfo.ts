@@ -47,7 +47,6 @@ export async function getAccountInfo({
 			isIpWhitelistingEnabled: apiRestrictionsData.ipRestrict,
 			accountUserId: accountData.uid,
 		};
-		console.log("Binance responses:", result);
 
 		return result;
 	} catch (error) {

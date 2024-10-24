@@ -5,6 +5,14 @@ import { updateAccountHealth } from "../utils/updateAccountHealth";
 export const createAccount = async (
 	accountData: Partial<IUserTradingAccount>
 ): Promise<IUserTradingAccount> => {
+	const alreadyExistingAccount = await UserTradingAccount.findOne({
+		userId: accountData.userId,
+		exchangeId: accountData.exchangeId,
+	});
+
+	if (alreadyExistingAccount) {
+		throw new Error("Account Already Exist");
+	}
 	const account = await UserTradingAccount.create(accountData);
 	if (!account) {
 		throw new Error("Account creation failed"); // Throw an error if account is null
