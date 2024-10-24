@@ -14,6 +14,7 @@ export const ResponseType = {
 export const RESPONSE_TAGS = {
 	getOrders: "getOrders",
 	addAccount: "addAccount",
+	deleteAccout: "deleteAccout",
 };
 
 export const RESPONSE_CODES = {

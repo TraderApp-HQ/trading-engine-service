@@ -2,7 +2,12 @@ import swaggerJsdoc from "swagger-jsdoc";
 
 import { ROUTES } from "../config/constants";
 import { createGetOrders } from "../documentation/orders";
-import { addAccount, addAccountBody } from "../documentation/userTradingAccount";
+import {
+	addAccount,
+	addAccountBody,
+	deleteAccountParams,
+	deleteAccount,
+} from "../documentation/userTradingAccount";
 
 const options: swaggerJsdoc.Options = {
 	swaggerDefinition: {
@@ -22,6 +27,7 @@ const options: swaggerJsdoc.Options = {
 			},
 			schemas: {
 				addAccountBody,
+				deleteAccountParams,
 			},
 		},
 		security: [
@@ -32,6 +38,7 @@ const options: swaggerJsdoc.Options = {
 		paths: {
 			[`/orders${ROUTES.getOrders}`]: { get: createGetOrders },
 			[`/account${ROUTES.addAccount}`]: { post: addAccount },
+			[`/account/delete/{id}`]: { delete: deleteAccount },
 		},
 	},
 	apis: ["./src/routes/*.ts"], // Point to your route files
