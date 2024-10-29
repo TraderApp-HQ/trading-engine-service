@@ -11,9 +11,16 @@ export const ResponseType = {
 	ERROR: "error",
 };
 
+export const ErrorMessage = {
+	unauthorized: "Unauthorized",
+	validationError: "ValidationError",
+	forbidden: "Forbidden",
+	notfound: "NotFound",
+};
+
 export const RESPONSE_TAGS = {
 	getOrders: "getOrders",
-	addAccount: "addAccount",
+	manualConnection: "manualConnection",
 	deleteAccout: "deleteAccout",
 };
 
@@ -39,5 +46,5 @@ export const ResponseMessage = {
 
 export const ROUTES = {
 	getOrders: "/",
-	addAccount: "/add",
+	manualConnection: "/connect/manual",
 };

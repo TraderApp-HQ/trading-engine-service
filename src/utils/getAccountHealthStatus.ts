@@ -1,7 +1,8 @@
-import { AccountConnectionStatus } from "../config/enums";
 import { IUserTradingAccount } from "../models/UserTradingAccount";
 
-export async function updateAccountHealth(userTradingAccount: IUserTradingAccount) {
+export async function getAccountHealthStatus(
+	userTradingAccount: Partial<IUserTradingAccount>
+): Promise<string[]> {
 	const healthMessages = [];
 
 	if (!userTradingAccount.isWithdrawalEnabled) {
@@ -20,11 +21,5 @@ export async function updateAccountHealth(userTradingAccount: IUserTradingAccoun
 		healthMessages.push("IP whitelist does not match");
 	}
 
-	userTradingAccount.connectionStatus =
-		healthMessages.length > 0
-			? AccountConnectionStatus.FAILED
-			: AccountConnectionStatus.CONNECTED;
-	userTradingAccount.errorMessages = healthMessages;
-
-	await userTradingAccount.save();
+	return healthMessages;
 }

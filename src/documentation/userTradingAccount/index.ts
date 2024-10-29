@@ -1,2 +1,2 @@
-export * from "./addAccount.docs";
+export * from "./manualConnection.docs";
 export * from "./deleteAccount.docs";

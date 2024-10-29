@@ -1,44 +1,54 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { AccountConnectionStatus, Exchange } from "../config/enums";
+import { AccountConnectionStatus, Category, ConnectionType, Platform } from "../config/enums";
 import { encrypt } from "../utils/encryption";
 
 export interface IUserTradingAccount extends Document {
 	userId: string; // Reference to the user who owns these credentials
-	exchangeName: Exchange;
-	exchangeId: number; // e.g., 112
+	platformName: Platform;
+	platformId: number; // e.g., 112
 	apiKey: string;
 	apiSecret: string;
-	accountUserId: string; // Unique identifier returned by Binance
+	externalAccountUserId: string; // Unique identifier returned by trading plaforms like Binance
 	isWithdrawalEnabled: boolean;
 	isFuturesTradingEnabled: boolean;
 	isSpotTradingEnabled: boolean;
 	isIpWhitelistingEnabled?: boolean;
 	connectionStatus: AccountConnectionStatus;
 	errorMessages: string[]; // List of reasons/messages for the unhealthy status
+	category: Category;
+	connectionType: ConnectionType;
 }
 
 const UserTradingAccountSchema = new Schema<IUserTradingAccount>(
 	{
 		userId: { type: String, required: true },
-		exchangeName: {
+		platformName: {
 			type: String,
-			enum: Exchange,
+			enum: Platform,
 			required: true,
 		},
-		exchangeId: { type: Number, required: true },
-		apiKey: { type: String, required: true },
-		apiSecret: { type: String, required: true },
-		accountUserId: { type: String, required: true },
-		isSpotTradingEnabled: { type: Boolean, required: true },
-		isFuturesTradingEnabled: { type: Boolean, required: true },
-		isWithdrawalEnabled: { type: Boolean, required: true },
-		isIpWhitelistingEnabled: { type: Boolean, default: false },
+		platformId: { type: Number, required: true },
+		apiKey: { type: String },
+		apiSecret: { type: String },
+		externalAccountUserId: { type: String },
+		isWithdrawalEnabled: { type: Boolean },
+		isFuturesTradingEnabled: { type: Boolean },
+		isSpotTradingEnabled: { type: Boolean },
+		isIpWhitelistingEnabled: { type: Boolean },
 		connectionStatus: {
 			type: String,
 			enum: AccountConnectionStatus,
-			default: AccountConnectionStatus.NOT_CONNECTED,
+			default: AccountConnectionStatus.FAILED,
 		},
 		errorMessages: { type: [String], default: [] },
+		category: {
+			type: String,
+			enum: Category,
+		},
+		connectionType: {
+			type: String,
+			enum: ConnectionType,
+		},
 	},
 	{ versionKey: false, timestamps: true }
 );

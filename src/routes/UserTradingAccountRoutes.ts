@@ -11,7 +11,7 @@ import {
 const router = Router();
 
 // Define routes for user trading accounts
-router.post("/add", validateAddTradingAccountRequest, handleAddTradingAccount);
-router.delete("/delete/:id", validateDeleteTradingAccountRequest, handleDeleteAccount);
+router.post("/connect/manual", validateAddTradingAccountRequest, handleAddTradingAccount);
+router.patch("/delete/:id", validateDeleteTradingAccountRequest, handleDeleteAccount);
 
 export default router;

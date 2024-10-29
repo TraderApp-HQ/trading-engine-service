@@ -4,7 +4,7 @@ import cors from "cors";
 import { config } from "dotenv";
 import swaggerUi from "swagger-ui-express";
 import { logger, initSecrets, apiResponseHandler } from "@traderapp/shared-resources";
-import { ENVIRONMENTS, ResponseType } from "./config/constants";
+import { ENVIRONMENTS, ErrorMessage, ResponseType } from "./config/constants";
 import secretsJson from "./env.json";
 import specs from "./utils/swagger";
 
@@ -73,10 +73,10 @@ function startServer() {
 		let errorMessage = err.message;
 		let statusCode;
 
-		if (err.name === "ValidationError") statusCode = 400;
-		else if (err.name === "Unauthorized") statusCode = 401;
-		else if (err.name === "Forbidden") statusCode = 403;
-		else if (err.name === "NotFound") statusCode = 404;
+		if (err.name === ErrorMessage.validationError) statusCode = 400;
+		else if (err.name === ErrorMessage.unauthorized) statusCode = 401;
+		else if (err.name === ErrorMessage.forbidden) statusCode = 403;
+		else if (err.name === ErrorMessage.notfound) statusCode = 404;
 		else {
 			statusCode = 500;
 			errorName = "InternalServerError";

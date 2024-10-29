@@ -1,17 +1,18 @@
 import { DOC_RESPONSE, RESPONSE_CODES, RESPONSE_TAGS } from "../../config/constants";
+import { Category, ConnectionType } from "../../config/enums";
 
-const addAccountBody = {
+const manualConnectionBody = {
 	type: "object",
 	properties: {
 		userId: {
 			type: "string",
 			example: "1234",
 		},
-		exchangeName: {
+		platformName: {
 			type: "string",
 			example: "BINANCE",
 		},
-		exchangeId: {
+		platformId: {
 			type: "number",
 			example: 131,
 		},
@@ -23,12 +24,20 @@ const addAccountBody = {
 			type: "string",
 			example: "H0QxUofzifmrGPTkcs7Y_4wz5xv9G_3prk583FpbiLmcmqFfGABSxPVQzygDGIg",
 		},
+		category: {
+			type: "string",
+			enum: Category,
+		},
+		connectionType: {
+			type: "string",
+			enum: ConnectionType,
+		},
 	},
 };
 
-const addAccount = {
-	tags: [RESPONSE_TAGS.addAccount],
-	description: "Add new Account",
+const manualConnection = {
+	tags: [RESPONSE_TAGS.manualConnection],
+	description: "Manually connection new account",
 	requestBody: {
 		content: {
 			"application/json": {
@@ -47,4 +56,4 @@ const addAccount = {
 	},
 };
 
-export { addAccountBody, addAccount };
+export { manualConnectionBody, manualConnection };

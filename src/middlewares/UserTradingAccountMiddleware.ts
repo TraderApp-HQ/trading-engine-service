@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { checkUser } from "../utils/tokens";
 import Joi from "joi";
+import { Category, ConnectionType } from "../config/enums";
 
 export async function validateAddTradingAccountRequest(
 	req: Request,
@@ -13,10 +14,16 @@ export async function validateAddTradingAccountRequest(
 		// define validation schema
 		const schema = Joi.object({
 			userId: Joi.string().required().label("User Id"),
-			exchangeName: Joi.string().required().label("Exchange Name"),
-			exchangeId: Joi.number().required().label("Exchange Id"),
+			platformName: Joi.string().required().label("Platform Name"),
+			platformId: Joi.number().required().label("Platform Id"),
 			apiKey: Joi.string().required().label("API Key"),
 			apiSecret: Joi.string().required().label("API Secret"),
+			category: Joi.string()
+				.valid(...Object.values(Category))
+				.required(),
+			connectionType: Joi.string()
+				.valid(...Object.values(ConnectionType))
+				.required(),
 		});
 
 		// validate request
@@ -26,6 +33,7 @@ export async function validateAddTradingAccountRequest(
 			// strip string of quotes
 			error.message = error.message.replace(/\"/g, "");
 			next(error);
+			throw error;
 		}
 		next();
 	} catch (err: any) {

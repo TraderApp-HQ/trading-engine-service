@@ -1,7 +1,7 @@
 export enum AccountConnectionStatus {
 	FAILED = "FAILED",
 	CONNECTED = "CONNECTED",
-	NOT_CONNECTED = "NOT CONNECTED",
+	ARCHIVED = "ARCHIVED",
 }
 
 export enum AccountType {
@@ -14,6 +14,23 @@ export enum Currency {
 	BTC = "BTC",
 }
 
-export enum Exchange {
+export enum Platform {
 	BINANCE = "BINANCE",
+}
+
+export enum Category {
+	FOREX = "FOREX",
+	CRYPTO = "CRYPTO",
+}
+
+export enum ConnectionType {
+	MANUAL = "MANUAL",
+	FAST = "FAST",
+}
+
+export enum UserRoles {
+	USER = "USER",
+	SUBSCRIBER = "SUBSCRIBER",
+	ADMIN = "ADMIN",
+	SUPER_ADMIN = "SUPER_ADMIN",
 }

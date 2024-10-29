@@ -3,8 +3,8 @@ import swaggerJsdoc from "swagger-jsdoc";
 import { ROUTES } from "../config/constants";
 import { createGetOrders } from "../documentation/orders";
 import {
-	addAccount,
-	addAccountBody,
+	manualConnection,
+	manualConnectionBody,
 	deleteAccountParams,
 	deleteAccount,
 } from "../documentation/userTradingAccount";
@@ -26,7 +26,7 @@ const options: swaggerJsdoc.Options = {
 				},
 			},
 			schemas: {
-				addAccountBody,
+				manualConnectionBody,
 				deleteAccountParams,
 			},
 		},
@@ -37,8 +37,8 @@ const options: swaggerJsdoc.Options = {
 		],
 		paths: {
 			[`/orders${ROUTES.getOrders}`]: { get: createGetOrders },
-			[`/account${ROUTES.addAccount}`]: { post: addAccount },
-			[`/account/delete/{id}`]: { delete: deleteAccount },
+			[`/account${ROUTES.manualConnection}`]: { post: manualConnection },
+			[`/account/delete/{id}`]: { patch: deleteAccount },
 		},
 	},
 	apis: ["./src/routes/*.ts"], // Point to your route files
