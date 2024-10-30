@@ -11,8 +11,17 @@ export const ResponseType = {
 	ERROR: "error",
 };
 
+export const ErrorMessage = {
+	unauthorized: "Unauthorized",
+	validationError: "ValidationError",
+	forbidden: "Forbidden",
+	notfound: "NotFound",
+};
+
 export const RESPONSE_TAGS = {
 	getOrders: "getOrders",
+	manualConnection: "manualConnection",
+	deleteAccout: "deleteAccout",
 };
 
 export const RESPONSE_CODES = {
@@ -29,6 +38,13 @@ export const DOC_RESPONSE = {
 	SUCCESS: apiDocumentationResponseObject("Success"),
 };
 
+export const ResponseMessage = {
+	CREATE_ACCOUNT: "Account created Successfully",
+	DELETE_ACCOUNT: "Account deleted Successfully",
+	ACCOUNT_NOT_FOUND: "Account not found",
+};
+
 export const ROUTES = {
 	getOrders: "/",
+	manualConnection: "/connect/manual",
 };

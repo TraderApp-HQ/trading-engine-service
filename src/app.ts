@@ -1,15 +1,15 @@
 import express, { Application, Request, Response, NextFunction } from "express";
+import mongoose from "mongoose";
 import cors from "cors";
 import { config } from "dotenv";
 import swaggerUi from "swagger-ui-express";
 import { logger, initSecrets, apiResponseHandler } from "@traderapp/shared-resources";
-import { ENVIRONMENTS, ResponseType } from "./config/constants";
+import { ENVIRONMENTS, ErrorMessage, ResponseType } from "./config/constants";
 import secretsJson from "./env.json";
 import specs from "./utils/swagger";
 
 // import routes
-import { OrderRoutes } from "./routes";
-import initDatabase from "./config/database";
+import { OrderRoutes, UserTradingAccountRoutes } from "./routes";
 
 config();
 
@@ -19,24 +19,28 @@ const env = process.env.NODE_ENV || "development";
 const suffix = ENVIRONMENTS[env] || "dev";
 const secretNames = ["common-secrets", "trading-engine-service-secrets"];
 
-initSecrets({
-	env: suffix,
-	secretNames,
-	secretsJson,
-})
-	.then(() => {
-		const port = process.env.PORT;
-		app.listen(port, async () => {
-			await initDatabase();
-			startServer();
-			logger.log(`Server listening at port ${port}`);
-			logger.log(`Docs available at http://localhost:${port}/api-docs`);
-		});
-	})
-	.catch((err) => {
-		logger.log(`Error getting secrets. === ${JSON.stringify(err)}`);
-		throw err;
+(async function () {
+	await initSecrets({
+		env: suffix,
+		secretNames,
+		secretsJson,
 	});
+	const port = process.env.PORT;
+	const dbUrl = process.env.TRADING_ENGINE_SERVICE_DB_URL ?? "";
+	mongoose
+		.connect(dbUrl)
+		.then(() => {
+			app.listen(port, async () => {
+				startServer();
+				logger.log(`Server listening at port ${port}`);
+				logger.log(`Docs available at http://localhost:${port}/api-docs`);
+			});
+		})
+		.catch((err) => {
+			logger.log(`Error getting secrets. === ${JSON.stringify(err)}`);
+			throw err;
+		});
+})();
 
 function startServer() {
 	// cors
@@ -56,6 +60,7 @@ function startServer() {
 
 	// api routes
 	app.use(`/orders`, OrderRoutes);
+	app.use(`/account`, UserTradingAccountRoutes);
 
 	// health check
 	app.get("/ping", (_req, res) => {
@@ -68,10 +73,10 @@ function startServer() {
 		let errorMessage = err.message;
 		let statusCode;
 
-		if (err.name === "ValidationError") statusCode = 400;
-		else if (err.name === "Unauthorized") statusCode = 401;
-		else if (err.name === "Forbidden") statusCode = 403;
-		else if (err.name === "NotFound") statusCode = 404;
+		if (err.name === ErrorMessage.validationError) statusCode = 400;
+		else if (err.name === ErrorMessage.unauthorized) statusCode = 401;
+		else if (err.name === ErrorMessage.forbidden) statusCode = 403;
+		else if (err.name === ErrorMessage.notfound) statusCode = 404;
 		else {
 			statusCode = 500;
 			errorName = "InternalServerError";
@@ -83,8 +88,14 @@ function startServer() {
 			apiResponseHandler({
 				type: ResponseType.ERROR,
 				message: errorMessage,
-				object: err,
+				object: {
+					statusCode,
+					errorName,
+					errorMessage,
+				},
 			})
 		);
 	});
 }
+
+export { app };
