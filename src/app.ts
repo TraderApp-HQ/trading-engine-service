@@ -43,13 +43,38 @@ const secretNames = ["common-secrets", "trading-engine-service-secrets"];
 })();
 
 function startServer() {
+	// Define an array of allowed origins
+	const allowedOrigins = [
+		"http://localhost:3000",
+		"http://localhost:8788",
+		"https://users-dashboard-dev.traderapp.finance",
+		"https://web-dashboard-dev.traderapp.finance",
+		"https://www.web-dashboard-dev.traderapp.finance",
+		"https://web-dashboard-staging.traderapp.finance",
+		"https://www.web-dashboard-staging.traderapp.finance",
+	];
+
+	const corsOptions = {
+		origin: (
+			origin: string | undefined,
+			callback: (error: Error | null, allow?: boolean) => void
+		) => {
+			// Allow requests with no origin (like mobile apps or curl requests)
+			if (!origin) {
+				callback(null, true);
+				return;
+			}
+			if (allowedOrigins.includes(origin)) {
+				callback(null, true);
+			} else {
+				callback(new Error(`Not allowed by CORS: ${origin}`));
+			}
+		},
+		methods: "GET, HEAD, PUT, PATCH, POST, DELETE",
+		credentials: true, // Allow credentials
+	};
 	// cors
-	app.use(
-		cors({
-			origin: "http://localhost:3000",
-			methods: "GET, HEAD, PUT, PATCH, POST, DELETE",
-		})
-	);
+	app.use(cors(corsOptions));
 
 	// parse incoming requests
 	app.use(express.urlencoded({ extended: true }));
