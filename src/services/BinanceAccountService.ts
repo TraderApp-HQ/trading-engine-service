@@ -84,7 +84,7 @@ class BinanceAccountService {
 
 			return result;
 		} catch (error: any) {
-			error.name = ErrorMessage.unauthorized;
+			error.name = ErrorMessage.notfound;
 			throw error;
 		}
 	}
