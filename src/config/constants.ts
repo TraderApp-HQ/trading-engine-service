@@ -42,6 +42,7 @@ export const ResponseMessage = {
 	CREATE_ACCOUNT: "Account created Successfully",
 	DELETE_ACCOUNT: "Account deleted Successfully",
 	ACCOUNT_NOT_FOUND: "Account not found",
+	GET_USER_TRADING_ACCOUNT_WITH_BALANCES: "Account Retrieved Successfully",
 };
 
 export const ROUTES = {

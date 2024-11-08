@@ -9,7 +9,7 @@ interface IGetBinanceAccountInfo {
 	apiSecret: string;
 }
 
-export interface IAccountBalance {
+interface IAccountBalance {
 	asset: Currency;
 	free: number;
 	locked: number;

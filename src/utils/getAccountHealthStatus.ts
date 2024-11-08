@@ -5,8 +5,8 @@ export async function getAccountHealthStatus(
 ): Promise<string[]> {
 	const healthMessages = [];
 
-	if (!userTradingAccount.isWithdrawalEnabled) {
-		healthMessages.push("Withdrawal is disabled");
+	if (userTradingAccount.isWithdrawalEnabled) {
+		healthMessages.push("Withdrawal is enabled");
 	}
 
 	if (!userTradingAccount.isFuturesTradingEnabled) {

@@ -19,6 +19,7 @@ export async function validateAddTradingAccountRequest(
 			userId: Joi.string().required().label("User Id"),
 			platformName: Joi.string().required().label("Platform Name"),
 			platformId: Joi.number().required().label("Platform Id"),
+			plaformLogo: Joi.string().required().label("Platform Logo"),
 			apiKey: Joi.string().pattern(apiKeyRegex).required().label("API Key").messages({
 				"string.pattern.base": "API Key is invalid",
 			}),
@@ -59,6 +60,33 @@ export async function validateDeleteTradingAccountRequest(
 		// define validation schema
 		const schema = Joi.object({
 			id: Joi.string().required().label("Id"),
+		});
+
+		// validate request
+		const { error } = schema.validate(req.params);
+
+		if (error) {
+			// strip string of quotes
+			error.message = error.message.replace(/\"/g, "");
+			next(error);
+		}
+		next();
+	} catch (err: any) {
+		next(err);
+	}
+}
+
+export async function validateGetUserAccountWithBalancesRequest(
+	req: Request,
+	res: Response,
+	next: NextFunction
+) {
+	try {
+		await checkUser(req);
+
+		// define validation schema
+		const schema = Joi.object({
+			userId: Joi.string().required().label("User Id"),
 		});
 
 		// validate request

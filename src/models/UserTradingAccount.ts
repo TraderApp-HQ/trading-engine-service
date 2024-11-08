@@ -6,6 +6,7 @@ export interface IUserTradingAccount extends Document {
 	userId: string; // Reference to the user who owns these credentials
 	platformName: Platform;
 	platformId: number; // e.g., 112
+	plaformLogo: string;
 	apiKey: string;
 	apiSecret: string;
 	externalAccountUserId: string; // Unique identifier returned by trading plaforms like Binance
@@ -17,6 +18,7 @@ export interface IUserTradingAccount extends Document {
 	errorMessages: string[]; // List of reasons/messages for the unhealthy status
 	category: Category;
 	connectionType: ConnectionType;
+	balances: mongoose.Types.ObjectId[];
 }
 
 const UserTradingAccountSchema = new Schema<IUserTradingAccount>(
@@ -28,6 +30,7 @@ const UserTradingAccountSchema = new Schema<IUserTradingAccount>(
 			required: true,
 		},
 		platformId: { type: Number, required: true },
+		plaformLogo: { type: String, required: true },
 		apiKey: { type: String },
 		apiSecret: { type: String },
 		externalAccountUserId: { type: String },
@@ -49,6 +52,7 @@ const UserTradingAccountSchema = new Schema<IUserTradingAccount>(
 			type: String,
 			enum: ConnectionType,
 		},
+		balances: [{ type: mongoose.Schema.Types.ObjectId, ref: "user-trading-account-balance" }],
 	},
 	{ versionKey: false, timestamps: true }
 );

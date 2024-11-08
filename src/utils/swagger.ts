@@ -7,6 +7,8 @@ import {
 	manualConnectionBody,
 	deleteAccountParams,
 	deleteAccount,
+	getUserAccountWithBalancesParams,
+	getUserAccountWithBalances,
 } from "../documentation/userTradingAccount";
 
 const options: swaggerJsdoc.Options = {
@@ -28,6 +30,7 @@ const options: swaggerJsdoc.Options = {
 			schemas: {
 				manualConnectionBody,
 				deleteAccountParams,
+				getUserAccountWithBalancesParams,
 			},
 		},
 		security: [
@@ -39,6 +42,7 @@ const options: swaggerJsdoc.Options = {
 			[`/orders${ROUTES.getOrders}`]: { get: createGetOrders },
 			[`/account${ROUTES.manualConnection}`]: { post: manualConnection },
 			[`/account/delete/{id}`]: { patch: deleteAccount },
+			[`/account/{id}`]: { get: getUserAccountWithBalances },
 		},
 	},
 	apis: ["./src/routes/*.ts"], // Point to your route files
