@@ -1,5 +1,6 @@
 import { ErrorMessage } from "../config/constants";
-import { AccountConnectionStatus } from "../config/enums";
+import { AccountConnectionStatus, AccountType, Currency } from "../config/enums";
+import { IAccountBalance, IUserAccountWithBalance } from "../config/interfaces";
 import UserTradingAccount, { IUserTradingAccount } from "../models/UserTradingAccount";
 import { getAccountHealthStatus } from "../utils/getAccountHealthStatus";
 
@@ -46,6 +47,46 @@ class UserTradingAccountService {
 		return await UserTradingAccount.findByIdAndUpdate(id, {
 			connectionStatus: AccountConnectionStatus.ARCHIVED,
 		});
+	}
+
+	public async getUsersAccountsWithBalances(userId: string): Promise<IUserAccountWithBalance[]> {
+		try {
+			const accounts = await UserTradingAccount.find({
+				userId,
+				connectionStatus: { $ne: AccountConnectionStatus.ARCHIVED },
+			}).populate<{
+				balances: Array<Partial<IAccountBalance>>;
+			}>({
+				path: "balances",
+				select: "currency availableBalance lockedBalance accountType", // Fields to populate
+			});
+
+			if (!accounts || accounts.length === 0) {
+				const error = new Error("No accounts found");
+				error.name = ErrorMessage.notfound;
+				throw error;
+			}
+
+			// Map each account to the IUserAccountWithBalance format
+			return accounts.map((account) => ({
+				id: account._id as string,
+				platformName: account.platformName,
+				platformId: account.platformId,
+				plaformLogo: account.plaformLogo,
+				category: account.category,
+				errorMessages: account.errorMessages,
+				connectionStatus: account.connectionStatus,
+				balances: account.balances.map((balance) => ({
+					currency: balance.currency ?? Currency.USDT,
+					availableBalance: balance.availableBalance ?? 0,
+					lockedBalance: balance.lockedBalance ?? 0,
+					accountType: balance.accountType ?? AccountType.SPOT,
+				})),
+			}));
+		} catch (error: any) {
+			error.name = ErrorMessage.notfound;
+			throw error;
+		}
 	}
 }
 

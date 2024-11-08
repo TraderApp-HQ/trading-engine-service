@@ -11,13 +11,21 @@ export async function validateAddTradingAccountRequest(
 	try {
 		await checkUser(req);
 
+		// Define regex for API key and secret validation
+		const apiKeyRegex = /^[A-Za-z0-9]{64}$/;
+
 		// define validation schema
 		const schema = Joi.object({
 			userId: Joi.string().required().label("User Id"),
 			platformName: Joi.string().required().label("Platform Name"),
 			platformId: Joi.number().required().label("Platform Id"),
-			apiKey: Joi.string().required().label("API Key"),
-			apiSecret: Joi.string().required().label("API Secret"),
+			plaformLogo: Joi.string().required().label("Platform Logo"),
+			apiKey: Joi.string().pattern(apiKeyRegex).required().label("API Key").messages({
+				"string.pattern.base": "API Key is invalid",
+			}),
+			apiSecret: Joi.string().pattern(apiKeyRegex).required().label("API Secret").messages({
+				"string.pattern.base": "API Secret is invalid",
+			}),
 			category: Joi.string()
 				.valid(...Object.values(Category))
 				.required(),
@@ -52,6 +60,33 @@ export async function validateDeleteTradingAccountRequest(
 		// define validation schema
 		const schema = Joi.object({
 			id: Joi.string().required().label("Id"),
+		});
+
+		// validate request
+		const { error } = schema.validate(req.params);
+
+		if (error) {
+			// strip string of quotes
+			error.message = error.message.replace(/\"/g, "");
+			next(error);
+		}
+		next();
+	} catch (err: any) {
+		next(err);
+	}
+}
+
+export async function validateGetUserAccountWithBalancesRequest(
+	req: Request,
+	res: Response,
+	next: NextFunction
+) {
+	try {
+		await checkUser(req);
+
+		// define validation schema
+		const schema = Joi.object({
+			userId: Joi.string().required().label("User Id"),
 		});
 
 		// validate request

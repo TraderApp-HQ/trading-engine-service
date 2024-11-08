@@ -1,4 +1,4 @@
-import { UserRoles } from "./enums";
+import { AccountConnectionStatus, AccountType, Category, Currency, UserRoles } from "./enums";
 
 export interface IAccessToken {
 	id: string;
@@ -9,4 +9,22 @@ export interface IAccessToken {
 	isEmailVerified: boolean;
 	isIdVerified: boolean;
 	role: UserRoles[];
+}
+
+export interface IAccountBalance {
+	currency: Currency;
+	availableBalance: number;
+	lockedBalance: number;
+	accountType: AccountType;
+}
+
+export interface IUserAccountWithBalance {
+	id: string;
+	platformName: string;
+	platformId: number;
+	plaformLogo: string;
+	category: Category;
+	errorMessages: string[];
+	connectionStatus: AccountConnectionStatus;
+	balances: IAccountBalance[];
 }

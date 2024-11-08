@@ -4,10 +4,11 @@ import UserTradingAccountService from "../services/UserTradingAccountService";
 import { IUserTradingAccount } from "../models/UserTradingAccount";
 import { HttpStatus } from "../utils/httpStatus";
 import { ResponseMessage, ResponseType } from "../config/constants";
-import BinanceAccountService, { IAccountBalance } from "../services/BinanceAccountService";
+import BinanceAccountService from "../services/BinanceAccountService";
 import { encrypt } from "../utils/encryption";
 import { Category } from "../config/enums";
 import UserTradingBalanceService from "../services/UserTradingBalanceService";
+import mongoose from "mongoose";
 
 // Create a new trading account
 export const handleAddTradingAccount = async (
@@ -21,22 +22,25 @@ export const handleAddTradingAccount = async (
 		const accountData = req.body as IUserTradingAccount;
 		const { apiKey, apiSecret } = req.body;
 
-		const userAccoutInfo = new BinanceAccountService({
+		const userAccountInfo = new BinanceAccountService({
 			apiKey: encrypt(apiKey as string),
 			apiSecret: encrypt(apiSecret as string),
 		});
 
-		const binanceAccountInfo = await userAccoutInfo.getBinanceAccountInfo();
+		const binanceAccountInfo = await userAccountInfo.getBinanceAccountInfo();
 
 		if (accountData.category === Category.CRYPTO) {
+			// Create the account first, without balances
 			const newAccount = await userTradingAccountService.connectAccount({
 				...accountData,
 				...binanceAccountInfo,
+				balances: [],
 			});
 
-			await Promise.all(
-				binanceAccountInfo.selectedBalances.map(async (balance: IAccountBalance) => {
-					await userTradingBalanceService.addAccountBalance({
+			// Add balances and collect their IDs
+			const balanceIds = await Promise.all(
+				binanceAccountInfo.selectedBalances.map(async (balance) => {
+					const createdBalance = await userTradingBalanceService.addAccountBalance({
 						userId: newAccount.userId,
 						platformName: accountData.platformName,
 						platformId: accountData.platformId,
@@ -45,8 +49,13 @@ export const handleAddTradingAccount = async (
 						availableBalance: balance.free,
 						lockedBalance: balance.locked,
 					});
+					return createdBalance._id;
 				})
 			);
+
+			// Update the account with the balance IDs
+			newAccount.balances = balanceIds as mongoose.Types.ObjectId[];
+			await newAccount.save();
 
 			res.status(HttpStatus.OK).json(
 				apiResponseHandler({
@@ -83,6 +92,27 @@ export const handleDeleteAccount = async (
 			apiResponseHandler({
 				type: ResponseType.SUCCESS,
 				message: ResponseMessage.DELETE_ACCOUNT,
+			})
+		);
+	} catch (error) {
+		next(error);
+	}
+};
+
+export const handleGetUserAccountsWithBalances = async (
+	req: Request,
+	res: Response,
+	next: NextFunction
+): Promise<void> => {
+	try {
+		const userTradingAccountService = new UserTradingAccountService();
+		const userId = req.params.userId;
+		const tradingAccount = await userTradingAccountService.getUsersAccountsWithBalances(userId);
+		res.status(HttpStatus.OK).json(
+			apiResponseHandler({
+				type: ResponseType.SUCCESS,
+				object: tradingAccount,
+				message: ResponseMessage.GET_USER_TRADING_ACCOUNT_WITH_BALANCES,
 			})
 		);
 	} catch (error) {
