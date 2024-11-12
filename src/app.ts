@@ -106,7 +106,7 @@ function startServer() {
 			statusCode = 500;
 			errorName = "InternalServerError";
 			errorMessage = "Something went wrong. Please try again after a while.";
-			console.log("Error name: ", errorName, "Error message: ", err.message);
+			console.log("Error name: ", errorName, "Error message: ", err.message, "errorObj", err);
 		}
 
 		res.status(statusCode).json(

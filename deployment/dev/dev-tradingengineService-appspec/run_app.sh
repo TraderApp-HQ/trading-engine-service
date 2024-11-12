@@ -14,4 +14,4 @@ aws ecr get-login-password --region eu-west-1 | sudo docker login --username AWS
 sudo docker pull 575439814610.dkr.ecr.eu-west-1.amazonaws.com/dev-tradingengine-service:latest
 
 # Run the newly pulled image
-sudo docker run -d -p 80:8080 -e NODE_ENV=development -e SERVICE=dev-tradingengineService --log-driver=awslogs --log-opt awslogs-region=eu-west-1 --log-opt awslogs-group=/aws/ec2/tradingengine-tradingengineService --log-opt awslogs-create-group=true 575439814610.dkr.ecr.eu-west-1.amazonaws.com/dev-tradingengine-service:latest
+sudo docker run -d -p 80:8080 -e NODE_ENV=development -e SERVICE=dev-tradingengineService --log-driver=awslogs --log-opt awslogs-region=eu-west-1 --log-opt awslogs-group=/aws/ec2/dev-tradingengineService --log-opt awslogs-create-group=true 575439814610.dkr.ecr.eu-west-1.amazonaws.com/dev-tradingengine-service:latest
