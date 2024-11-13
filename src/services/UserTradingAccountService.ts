@@ -61,12 +61,6 @@ class UserTradingAccountService {
 				select: "currency availableBalance lockedBalance accountType", // Fields to populate
 			});
 
-			if (!accounts || accounts.length === 0) {
-				const error = new Error("No accounts found");
-				error.name = ErrorMessage.notfound;
-				throw error;
-			}
-
 			// Map each account to the IUserAccountWithBalance format
 			return accounts.map((account) => ({
 				id: account._id as string,
