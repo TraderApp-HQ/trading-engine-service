@@ -3,7 +3,7 @@ import { DOC_RESPONSE, RESPONSE_CODES, RESPONSE_TAGS } from "../../config/consta
 const getUserAccountWithBalancesParams = {
 	type: "object",
 	properties: {
-		id: {
+		userId: {
 			type: "string",
 			example: "60d21b4667d0d8992e610c85",
 		},
@@ -16,11 +16,11 @@ const getUserAccountWithBalances = {
 	parameters: [
 		{
 			in: "path",
-			name: "id",
+			name: "userId",
 			description: "get account using Id",
 			required: true,
 			schema: {
-				$ref: "#/components/schemas/getUserAccountWithBalancesParams/properties/id",
+				$ref: "#/components/schemas/getUserAccountWithBalancesParams/properties/userId",
 			},
 		},
 	],

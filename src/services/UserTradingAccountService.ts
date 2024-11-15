@@ -1,7 +1,8 @@
 import { ErrorMessage } from "../config/constants";
 import { AccountConnectionStatus, AccountType, Currency } from "../config/enums";
-import { IAccountBalance, IUserAccountWithBalance } from "../config/interfaces";
+import { IAccountBalance, IUpdateAccount, IUserAccountWithBalance } from "../config/interfaces";
 import UserTradingAccount, { IUserTradingAccount } from "../models/UserTradingAccount";
+import { decrypt, encrypt } from "../utils/encryption";
 import { getAccountHealthStatus } from "../utils/getAccountHealthStatus";
 
 class UserTradingAccountService {
@@ -9,18 +10,18 @@ class UserTradingAccountService {
 	public async connectAccount(
 		accountData: Partial<IUserTradingAccount>
 	): Promise<IUserTradingAccount> {
-		const alreadyExistingAccount = await UserTradingAccount.findOne({
-			userId: accountData.userId,
-			platformId: accountData.platformId,
-		});
-
 		const alreadyExistingExternalAccount = await UserTradingAccount.findOne({
 			externalAccountUserId: accountData.externalAccountUserId,
 		});
 
-		if (alreadyExistingAccount || alreadyExistingExternalAccount) {
-			const error = new Error("Account Already Exist");
-			error.name = ErrorMessage.forbidden;
+		const existingExternalAccountForOtherUser = await UserTradingAccount.findOne({
+			externalAccountUserId: accountData.externalAccountUserId,
+			userId: { $ne: accountData.userId },
+		});
+
+		if (existingExternalAccountForOtherUser) {
+			const error = new Error("Account already exist");
+			error.name = ErrorMessage.validationError;
 			throw error;
 		}
 
@@ -32,11 +33,25 @@ class UserTradingAccountService {
 			accountData.connectionStatus = AccountConnectionStatus.CONNECTED;
 		}
 
+		if (
+			alreadyExistingExternalAccount &&
+			alreadyExistingExternalAccount.connectionStatus !== AccountConnectionStatus.CONNECTED
+		) {
+			const account = await this.updateAccount({
+				id: alreadyExistingExternalAccount.id,
+				accountData,
+			});
+			return account;
+		}
+
+		if (alreadyExistingExternalAccount) {
+			return alreadyExistingExternalAccount;
+		}
 		const account = await UserTradingAccount.create(accountData);
 		if (!account) {
 			const error = new Error("Account creation failed");
 			error.name = ErrorMessage.notfound;
-			throw error; // Throw an error if account is null
+			throw error;
 		}
 
 		return account;
@@ -61,18 +76,12 @@ class UserTradingAccountService {
 				select: "currency availableBalance lockedBalance accountType", // Fields to populate
 			});
 
-			if (!accounts || accounts.length === 0) {
-				const error = new Error("No accounts found");
-				error.name = ErrorMessage.notfound;
-				throw error;
-			}
-
 			// Map each account to the IUserAccountWithBalance format
 			return accounts.map((account) => ({
 				id: account._id as string,
 				platformName: account.platformName,
 				platformId: account.platformId,
-				plaformLogo: account.plaformLogo,
+				plaformLogo: account.platformLogo,
 				category: account.category,
 				errorMessages: account.errorMessages,
 				connectionStatus: account.connectionStatus,
@@ -87,6 +96,50 @@ class UserTradingAccountService {
 			error.name = ErrorMessage.notfound;
 			throw error;
 		}
+	}
+
+	public async updateAccount(params: IUpdateAccount): Promise<IUserTradingAccount> {
+		const { id, accountData } = params;
+		const accountHealthMessages = await getAccountHealthStatus(accountData);
+
+		accountData.errorMessages = accountHealthMessages;
+
+		if (accountHealthMessages.length > 0) {
+			accountData.errorMessages = accountHealthMessages;
+			accountData.connectionStatus = AccountConnectionStatus.FAILED;
+		} else {
+			accountData.connectionStatus = AccountConnectionStatus.CONNECTED;
+		}
+
+		accountData.apiKey = encrypt(accountData.apiKey ?? "");
+		accountData.apiSecret = encrypt(accountData.apiSecret ?? "");
+
+		const existingExternalAccountForOtherUser = await UserTradingAccount.findOne({
+			externalAccountUserId: accountData.externalAccountUserId,
+			userId: { $ne: accountData.userId },
+		});
+
+		if (existingExternalAccountForOtherUser) {
+			const error = new Error("Unauthorized");
+			error.name = ErrorMessage.unauthorized;
+			throw error;
+		}
+
+		const res = await UserTradingAccount.findByIdAndUpdate(id, accountData);
+		return res as IUserTradingAccount;
+	}
+
+	public async getAccountById(_id: string): Promise<IUserTradingAccount> {
+		const account = await UserTradingAccount.findOne({ _id });
+
+		if (account && account?.apiKey && account?.apiSecret) {
+			const apiKey = decrypt(account.apiKey);
+			const apiSecret = decrypt(account.apiSecret);
+
+			account.apiKey = apiKey;
+			account.apiSecret = apiSecret;
+		}
+		return account as IUserTradingAccount;
 	}
 }
 

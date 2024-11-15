@@ -47,6 +47,7 @@ function startServer() {
 	const allowedOrigins = [
 		"http://localhost:3000",
 		"http://localhost:8788",
+		"http://localhost:8080",
 		"https://users-dashboard-dev.traderapp.finance",
 		"https://web-dashboard-dev.traderapp.finance",
 		"https://www.web-dashboard-dev.traderapp.finance",

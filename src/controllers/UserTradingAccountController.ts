@@ -1,14 +1,15 @@
 import { NextFunction, Request, Response } from "express";
 import { apiResponseHandler } from "@traderapp/shared-resources";
 import UserTradingAccountService from "../services/UserTradingAccountService";
+import UserTradingBalanceService from "../services/UserTradingBalanceService";
+import BinanceAccountService from "../services/BinanceAccountService";
 import { IUserTradingAccount } from "../models/UserTradingAccount";
 import { HttpStatus } from "../utils/httpStatus";
 import { ResponseMessage, ResponseType } from "../config/constants";
-import BinanceAccountService from "../services/BinanceAccountService";
 import { encrypt } from "../utils/encryption";
 import { Category } from "../config/enums";
-import UserTradingBalanceService from "../services/UserTradingBalanceService";
 import mongoose from "mongoose";
+import { manageBalances } from "../utils/manageBalances";
 
 // Create a new trading account
 export const handleAddTradingAccount = async (
@@ -17,44 +18,30 @@ export const handleAddTradingAccount = async (
 	next: NextFunction
 ): Promise<void> => {
 	try {
-		const userTradingAccountService = new UserTradingAccountService();
-		const userTradingBalanceService = new UserTradingBalanceService();
 		const accountData = req.body as IUserTradingAccount;
 		const { apiKey, apiSecret } = req.body;
-
-		const userAccountInfo = new BinanceAccountService({
+		const userTradingAccountService = new UserTradingAccountService();
+		const userTradingBalanceService = new UserTradingBalanceService();
+		const encryptedKeys = {
 			apiKey: encrypt(apiKey as string),
 			apiSecret: encrypt(apiSecret as string),
-		});
-
-		const binanceAccountInfo = await userAccountInfo.getBinanceAccountInfo();
+		};
+		const userAccountInfo = new BinanceAccountService(encryptedKeys);
 
 		if (accountData.category === Category.CRYPTO) {
-			// Create the account first, without balances
+			const binanceData = await userAccountInfo.getBinanceAccountInfo();
 			const newAccount = await userTradingAccountService.connectAccount({
 				...accountData,
-				...binanceAccountInfo,
+				...binanceData,
 				balances: [],
 			});
 
-			// Add balances and collect their IDs
-			const balanceIds = await Promise.all(
-				binanceAccountInfo.selectedBalances.map(async (balance) => {
-					const createdBalance = await userTradingBalanceService.addAccountBalance({
-						userId: newAccount.userId,
-						platformName: accountData.platformName,
-						platformId: accountData.platformId,
-						currency: balance.asset,
-						accountType: balance.accountType,
-						availableBalance: balance.free,
-						lockedBalance: balance.locked,
-					});
-					return createdBalance._id;
-				})
-			);
-
-			// Update the account with the balance IDs
-			newAccount.balances = balanceIds as mongoose.Types.ObjectId[];
+			newAccount.balances = (await manageBalances(
+				userTradingBalanceService,
+				newAccount.userId,
+				accountData,
+				binanceData
+			)) as mongoose.Types.ObjectId[];
 			await newAccount.save();
 
 			res.status(HttpStatus.OK).json(
@@ -65,7 +52,6 @@ export const handleAddTradingAccount = async (
 				})
 			);
 		} else {
-			// Todo: implement forex connection
 			res.status(HttpStatus.OK).json(
 				apiResponseHandler({
 					type: ResponseType.SUCCESS,
@@ -86,8 +72,7 @@ export const handleDeleteAccount = async (
 ): Promise<void> => {
 	try {
 		const userTradingAccountService = new UserTradingAccountService();
-		const accountId = req.params.id;
-		await userTradingAccountService.deleteAccount(accountId);
+		await userTradingAccountService.deleteAccount(req.params.id);
 		res.status(HttpStatus.OK).json(
 			apiResponseHandler({
 				type: ResponseType.SUCCESS,
@@ -99,6 +84,7 @@ export const handleDeleteAccount = async (
 	}
 };
 
+// Get user accounts with balances
 export const handleGetUserAccountsWithBalances = async (
 	req: Request,
 	res: Response,
@@ -106,8 +92,9 @@ export const handleGetUserAccountsWithBalances = async (
 ): Promise<void> => {
 	try {
 		const userTradingAccountService = new UserTradingAccountService();
-		const userId = req.params.userId;
-		const tradingAccount = await userTradingAccountService.getUsersAccountsWithBalances(userId);
+		const tradingAccount = await userTradingAccountService.getUsersAccountsWithBalances(
+			req.params.userId
+		);
 		res.status(HttpStatus.OK).json(
 			apiResponseHandler({
 				type: ResponseType.SUCCESS,
@@ -115,6 +102,81 @@ export const handleGetUserAccountsWithBalances = async (
 				message: ResponseMessage.GET_USER_TRADING_ACCOUNT_WITH_BALANCES,
 			})
 		);
+	} catch (error) {
+		next(error);
+	}
+};
+
+// Get a specific user account with balances
+export const handleGetUserAccountbyId = async (
+	req: Request,
+	res: Response,
+	next: NextFunction
+): Promise<void> => {
+	try {
+		const userTradingAccountService = new UserTradingAccountService();
+		const tradingAccount = await userTradingAccountService.getAccountById(
+			req.params.tradingAccountId
+		);
+		res.status(HttpStatus.OK).json(
+			apiResponseHandler({
+				type: ResponseType.SUCCESS,
+				object: tradingAccount,
+				message: ResponseMessage.GET_USER_TRADING_ACCOUNT_WITH_BALANCES,
+			})
+		);
+	} catch (error) {
+		next(error);
+	}
+};
+
+// Update a trading account
+export const handleUpdateTradingAccount = async (
+	req: Request,
+	res: Response,
+	next: NextFunction
+): Promise<void> => {
+	try {
+		const accountData = req.body as IUserTradingAccount;
+		const { apiKey, apiSecret } = req.body;
+		const userTradingAccountService = new UserTradingAccountService();
+		const userTradingBalanceService = new UserTradingBalanceService();
+		const encryptedKeys = {
+			apiKey: encrypt(apiKey as string),
+			apiSecret: encrypt(apiSecret as string),
+		};
+		const userAccountInfo = new BinanceAccountService(encryptedKeys);
+
+		if (accountData.category === Category.CRYPTO) {
+			const binanceData = await userAccountInfo.getBinanceAccountInfo();
+			const updatedAccount = await userTradingAccountService.updateAccount({
+				id: req.params.tradingAccountId,
+				accountData: { ...accountData, ...binanceData, balances: [] },
+			});
+
+			updatedAccount.balances = (await manageBalances(
+				userTradingBalanceService,
+				updatedAccount.userId,
+				accountData,
+				binanceData
+			)) as mongoose.Types.ObjectId[];
+			await updatedAccount.save();
+
+			res.status(HttpStatus.OK).json(
+				apiResponseHandler({
+					type: ResponseType.SUCCESS,
+					object: updatedAccount,
+					message: ResponseMessage.UPDATE_ACCOUNT,
+				})
+			);
+		} else {
+			res.status(HttpStatus.OK).json(
+				apiResponseHandler({
+					type: ResponseType.SUCCESS,
+					message: ResponseMessage.UPDATE_ACCOUNT,
+				})
+			);
+		}
 	} catch (error) {
 		next(error);
 	}

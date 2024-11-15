@@ -6,7 +6,7 @@ export interface IUserTradingAccount extends Document {
 	userId: string; // Reference to the user who owns these credentials
 	platformName: Platform;
 	platformId: number; // e.g., 112
-	plaformLogo: string;
+	platformLogo: string;
 	apiKey: string;
 	apiSecret: string;
 	externalAccountUserId: string; // Unique identifier returned by trading plaforms like Binance
@@ -30,7 +30,7 @@ const UserTradingAccountSchema = new Schema<IUserTradingAccount>(
 			required: true,
 		},
 		platformId: { type: Number, required: true },
-		plaformLogo: { type: String, required: true },
+		platformLogo: { type: String, required: true },
 		apiKey: { type: String },
 		apiSecret: { type: String },
 		externalAccountUserId: { type: String },
