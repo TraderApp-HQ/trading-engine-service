@@ -106,6 +106,17 @@ class UserTradingAccountService {
 		accountData.apiKey = encrypt(accountData.apiKey ?? "");
 		accountData.apiSecret = encrypt(accountData.apiSecret ?? "");
 
+		const existingExternalAccountForOtherUser = await UserTradingAccount.findOne({
+			externalAccountUserId: accountData.externalAccountUserId,
+			userId: { $ne: accountData.userId },
+		});
+
+		if (existingExternalAccountForOtherUser) {
+			const error = new Error("Account already exist");
+			error.name = ErrorMessage.validationError;
+			throw error;
+		}
+
 		const res = await UserTradingAccount.findByIdAndUpdate(id, accountData);
 		return res as IUserTradingAccount;
 	}

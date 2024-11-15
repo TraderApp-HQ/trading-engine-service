@@ -7,16 +7,16 @@ class UserTradingBalanceService {
 	public async addAccountBalance(
 		tradingBalanceData: Partial<IUserTradingAccountBalance>
 	): Promise<IUserTradingAccountBalance> {
-		const alreadyExistingExternalAccount = await UserTradingBalance.findOne({
+		const alreadyExistingBalance = await UserTradingBalance.findOne({
 			accountType: tradingBalanceData.accountType,
 			userId: tradingBalanceData.userId,
 			platformId: tradingBalanceData.platformId,
 			currency: tradingBalanceData.currency,
 		});
 
-		if (alreadyExistingExternalAccount) {
+		if (alreadyExistingBalance) {
 			const res = this.updateBalance({
-				id: alreadyExistingExternalAccount.id,
+				id: alreadyExistingBalance.id,
 				tradingBalanceData,
 			});
 			return res;
