@@ -103,6 +103,14 @@ class UserTradingAccountService {
 		const accountHealthMessages = await getAccountHealthStatus(accountData);
 
 		accountData.errorMessages = accountHealthMessages;
+
+		if (accountHealthMessages.length > 0) {
+			accountData.errorMessages = accountHealthMessages;
+			accountData.connectionStatus = AccountConnectionStatus.FAILED;
+		} else {
+			accountData.connectionStatus = AccountConnectionStatus.CONNECTED;
+		}
+
 		accountData.apiKey = encrypt(accountData.apiKey ?? "");
 		accountData.apiSecret = encrypt(accountData.apiSecret ?? "");
 
@@ -112,8 +120,8 @@ class UserTradingAccountService {
 		});
 
 		if (existingExternalAccountForOtherUser) {
-			const error = new Error("Account already exist");
-			error.name = ErrorMessage.validationError;
+			const error = new Error("Unauthorized");
+			error.name = ErrorMessage.unauthorized;
 			throw error;
 		}
 
