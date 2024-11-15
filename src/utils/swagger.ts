@@ -9,6 +9,11 @@ import {
 	deleteAccount,
 	getUserAccountWithBalancesParams,
 	getUserAccountWithBalances,
+	getUserAccountbyId,
+	getUserAccountbyIdParams,
+	updateAccount,
+	updateAccountBody,
+	updateAccountParams,
 } from "../documentation/userTradingAccount";
 
 const options: swaggerJsdoc.Options = {
@@ -31,6 +36,9 @@ const options: swaggerJsdoc.Options = {
 				manualConnectionBody,
 				deleteAccountParams,
 				getUserAccountWithBalancesParams,
+				getUserAccountbyIdParams,
+				updateAccountParams,
+				updateAccountBody,
 			},
 		},
 		security: [
@@ -42,7 +50,9 @@ const options: swaggerJsdoc.Options = {
 			[`/orders${ROUTES.getOrders}`]: { get: createGetOrders },
 			[`/account${ROUTES.manualConnection}`]: { post: manualConnection },
 			[`/account/delete/{id}`]: { patch: deleteAccount },
-			[`/account/{id}`]: { get: getUserAccountWithBalances },
+			[`/account/{userId}`]: { get: getUserAccountWithBalances },
+			[`/account/trading/account/{tradingAccountId}`]: { get: getUserAccountbyId },
+			[`/account/update/{tradingAccountId}`]: { patch: updateAccount },
 		},
 	},
 	apis: ["./src/routes/*.ts"], // Point to your route files

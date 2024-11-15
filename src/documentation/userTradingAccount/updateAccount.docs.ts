@@ -1,7 +1,17 @@
 import { DOC_RESPONSE, RESPONSE_CODES, RESPONSE_TAGS } from "../../config/constants";
 import { Category, ConnectionType } from "../../config/enums";
 
-const manualConnectionBody = {
+const updateAccountParams = {
+	type: "object",
+	properties: {
+		tradingAccountId: {
+			type: "string",
+			example: "60d21b4667d0d8992e610c85",
+		},
+	},
+};
+
+const updateAccountBody = {
 	type: "object",
 	properties: {
 		userId: {
@@ -30,25 +40,36 @@ const manualConnectionBody = {
 		},
 		category: {
 			type: "string",
-			enum: Category.CRYPTO,
+			enum: Category,
 			default: Category.CRYPTO,
 		},
 		connectionType: {
 			type: "string",
-			enum: ConnectionType.MANUAL,
+			enum: ConnectionType,
 			default: ConnectionType.MANUAL,
 		},
 	},
 };
 
-const manualConnection = {
-	tags: [RESPONSE_TAGS.manualConnection],
-	description: "Manually connection new account",
+const updateAccount = {
+	tags: [RESPONSE_TAGS.updateAccount],
+	description: "Update Account",
+	parameters: [
+		{
+			in: "path",
+			name: "tradingAccountId",
+			description: "Update account using trading account Id",
+			required: true,
+			schema: {
+				$ref: "#/components/schemas/updateAccountParams/properties/tradingAccountId",
+			},
+		},
+	],
 	requestBody: {
 		content: {
 			"application/json": {
 				schema: {
-					$ref: "#/components/schemas/manualConnectionBody",
+					$ref: "#/components/schemas/updateAccountBody",
 				},
 			},
 		},
@@ -62,4 +83,4 @@ const manualConnection = {
 	},
 };
 
-export { manualConnectionBody, manualConnection };
+export { updateAccountParams, updateAccountBody, updateAccount };

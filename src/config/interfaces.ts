@@ -1,3 +1,5 @@
+import { IUserTradingAccount } from "../models/UserTradingAccount";
+import { IUserTradingAccountBalance } from "../models/UserTradingBalance";
 import { AccountConnectionStatus, AccountType, Category, Currency, UserRoles } from "./enums";
 
 export interface IAccessToken {
@@ -27,4 +29,14 @@ export interface IUserAccountWithBalance {
 	errorMessages: string[];
 	connectionStatus: AccountConnectionStatus;
 	balances: IAccountBalance[];
+}
+
+export interface IUpdateAccount {
+	id: string;
+	accountData: Partial<IUserTradingAccount>;
+}
+
+export interface IUpdateBalance {
+	id: string;
+	tradingBalanceData: Partial<IUserTradingAccountBalance>;
 }
