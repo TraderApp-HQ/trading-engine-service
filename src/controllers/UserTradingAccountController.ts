@@ -20,6 +20,7 @@ export const handleAddTradingAccount = async (
 	try {
 		const accountData = req.body as IUserTradingAccount;
 		const { apiKey, apiSecret } = req.body;
+		console.log("API keys and secrets received", apiKey, apiSecret);
 		const userTradingAccountService = new UserTradingAccountService();
 		const userTradingBalanceService = new UserTradingBalanceService();
 		const encryptedKeys = {

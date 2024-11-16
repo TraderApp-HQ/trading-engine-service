@@ -4,6 +4,8 @@ import crypto from "crypto";
 const ENCRYPTION_KEY = process.env.API_SECRET_KEY_ENCRYPTION_KEY ?? ""; // Must be 32 characters for AES-256
 const IV_LENGTH = 16; // AES block size
 
+console.log("Encryption Key", ENCRYPTION_KEY);
+
 // Function to encrypt
 export const encrypt = (text: string) => {
 	const iv = crypto.randomBytes(IV_LENGTH); // Generate a random initialization vector

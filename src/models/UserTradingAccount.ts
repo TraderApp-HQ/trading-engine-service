@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 import { AccountConnectionStatus, Category, ConnectionType, Platform } from "../config/enums";
-import { encrypt } from "../utils/encryption";
+// import { encrypt } from "../utils/encryption";
 
 export interface IUserTradingAccount extends Document {
 	userId: string; // Reference to the user who owns these credentials
@@ -69,8 +69,8 @@ UserTradingAccountSchema.pre("save", function (next) {
 		return;
 	}
 
-	account.apiKey = encrypt(account.apiKey);
-	account.apiSecret = encrypt(account.apiSecret);
+	// account.apiKey = encrypt(account.apiKey);
+	// account.apiSecret = encrypt(account.apiSecret);
 
 	next();
 });

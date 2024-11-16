@@ -47,6 +47,7 @@ class UserTradingAccountService {
 		if (alreadyExistingExternalAccount) {
 			return alreadyExistingExternalAccount;
 		}
+		console.log("passed all checks and ready to insert new account details");
 		const account = await UserTradingAccount.create(accountData);
 		if (!account) {
 			const error = new Error("Account creation failed");
@@ -65,37 +66,42 @@ class UserTradingAccountService {
 	}
 
 	public async getUsersAccountsWithBalances(userId: string): Promise<IUserAccountWithBalance[]> {
-		try {
-			const accounts = await UserTradingAccount.find({
-				userId,
-				connectionStatus: { $ne: AccountConnectionStatus.ARCHIVED },
-			}).populate<{
-				balances: Array<Partial<IAccountBalance>>;
-			}>({
-				path: "balances",
-				select: "currency availableBalance lockedBalance accountType", // Fields to populate
-			});
+		// try {
+		const accounts = await UserTradingAccount.find({
+			userId,
+			connectionStatus: { $ne: AccountConnectionStatus.ARCHIVED },
+		}).populate<{
+			balances: Array<Partial<IAccountBalance>>;
+		}>({
+			path: "balances",
+			select: "currency availableBalance lockedBalance accountType", // Fields to populate
+		});
 
-			// Map each account to the IUserAccountWithBalance format
-			return accounts.map((account) => ({
-				id: account._id as string,
-				platformName: account.platformName,
-				platformId: account.platformId,
-				plaformLogo: account.platformLogo,
-				category: account.category,
-				errorMessages: account.errorMessages,
-				connectionStatus: account.connectionStatus,
-				balances: account.balances.map((balance) => ({
-					currency: balance.currency ?? Currency.USDT,
-					availableBalance: balance.availableBalance ?? 0,
-					lockedBalance: balance.lockedBalance ?? 0,
-					accountType: balance.accountType ?? AccountType.SPOT,
-				})),
-			}));
-		} catch (error: any) {
-			error.name = ErrorMessage.notfound;
-			throw error;
+		if (!accounts || accounts.length === 0) {
+			return [];
 		}
+
+		// Map each account to the IUserAccountWithBalance format
+		const data: IUserAccountWithBalance[] = accounts.map((account) => ({
+			id: account._id as string,
+			platformName: account.platformName,
+			platformId: account.platformId,
+			plaformLogo: account.platformLogo,
+			category: account.category,
+			errorMessages: account.errorMessages,
+			connectionStatus: account.connectionStatus,
+			balances: account.balances.map((balance) => ({
+				currency: balance.currency ?? Currency.USDT,
+				availableBalance: balance.availableBalance ?? 0,
+				lockedBalance: balance.lockedBalance ?? 0,
+				accountType: balance.accountType ?? AccountType.SPOT,
+			})),
+		}));
+		return data;
+		// } catch (error: any) {
+		// 	error.name = ErrorMessage.notfound;
+		// 	throw error;
+		// }
 	}
 
 	public async updateAccount(params: IUpdateAccount): Promise<IUserTradingAccount> {
