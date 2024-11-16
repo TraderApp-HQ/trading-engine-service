@@ -92,6 +92,7 @@ export const handleGetUserAccountsWithBalances = async (
 	next: NextFunction
 ): Promise<void> => {
 	try {
+		console.log("inside handle ger user account with balances controller");
 		const userTradingAccountService = new UserTradingAccountService();
 		const tradingAccount = await userTradingAccountService.getUsersAccountsWithBalances(
 			req.params.userId
