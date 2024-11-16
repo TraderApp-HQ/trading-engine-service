@@ -67,6 +67,7 @@ class UserTradingAccountService {
 
 	public async getUsersAccountsWithBalances(userId: string): Promise<IUserAccountWithBalance[]> {
 		// try {
+		console.log("inside fetching all trading accounts");
 		const accounts = await UserTradingAccount.find({
 			userId,
 			connectionStatus: { $ne: AccountConnectionStatus.ARCHIVED },
@@ -126,8 +127,10 @@ class UserTradingAccountService {
 		});
 
 		if (existingExternalAccountForOtherUser) {
-			const error = new Error("Unauthorized");
-			error.name = ErrorMessage.unauthorized;
+			const error = new Error(
+				"This operation is forbidden. Please disconnect your existing account and initiate a fresh account connection"
+			);
+			error.name = ErrorMessage.forbidden;
 			throw error;
 		}
 
