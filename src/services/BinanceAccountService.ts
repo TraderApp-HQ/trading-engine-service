@@ -1,6 +1,5 @@
 import axios from "axios";
 import crypto from "crypto";
-import { decrypt } from "../utils/encryption";
 import { AccountType, Currency } from "../config/enums";
 import { ErrorMessage } from "../config/constants";
 
@@ -33,8 +32,8 @@ class BinanceAccountService {
 	private readonly recvWindow = 5000;
 
 	constructor({ apiKey, apiSecret }: IGetBinanceAccountInfo) {
-		this.apiKey = decrypt(apiKey);
-		this.apiSecret = decrypt(apiSecret);
+		this.apiKey = apiKey;
+		this.apiSecret = apiSecret;
 		this.timestamp = Date.now();
 	}
 

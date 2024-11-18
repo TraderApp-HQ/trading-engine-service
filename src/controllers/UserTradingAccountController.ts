@@ -6,7 +6,6 @@ import BinanceAccountService from "../services/BinanceAccountService";
 import { IUserTradingAccount } from "../models/UserTradingAccount";
 import { HttpStatus } from "../utils/httpStatus";
 import { ResponseMessage, ResponseType } from "../config/constants";
-import { encrypt } from "../utils/encryption";
 import { Category } from "../config/enums";
 import mongoose from "mongoose";
 import { manageBalances } from "../utils/manageBalances";
@@ -23,11 +22,7 @@ export const handleAddTradingAccount = async (
 		console.log("API keys and secrets received", apiKey, apiSecret);
 		const userTradingAccountService = new UserTradingAccountService();
 		const userTradingBalanceService = new UserTradingBalanceService();
-		const encryptedKeys = {
-			apiKey: encrypt(apiKey as string),
-			apiSecret: encrypt(apiSecret as string),
-		};
-		const userAccountInfo = new BinanceAccountService(encryptedKeys);
+		const userAccountInfo = new BinanceAccountService({ apiKey, apiSecret });
 
 		if (accountData.category === Category.CRYPTO) {
 			const binanceData = await userAccountInfo.getBinanceAccountInfo();
@@ -142,11 +137,7 @@ export const handleUpdateTradingAccount = async (
 		const { apiKey, apiSecret } = req.body;
 		const userTradingAccountService = new UserTradingAccountService();
 		const userTradingBalanceService = new UserTradingBalanceService();
-		const encryptedKeys = {
-			apiKey: encrypt(apiKey as string),
-			apiSecret: encrypt(apiSecret as string),
-		};
-		const userAccountInfo = new BinanceAccountService(encryptedKeys);
+		const userAccountInfo = new BinanceAccountService({ apiKey, apiSecret });
 
 		if (accountData.category === Category.CRYPTO) {
 			const binanceData = await userAccountInfo.getBinanceAccountInfo();
