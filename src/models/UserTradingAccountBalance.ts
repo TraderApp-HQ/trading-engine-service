@@ -1,22 +1,28 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { AccountType, Currency, Platform } from "../config/enums";
+import { AccountType, Currency, TradingPlatform } from "../config/enums";
 
 export interface IUserTradingAccountBalance extends Document {
 	userId: string; // Reference to the user
-	platformName: Platform;
+	platformName: TradingPlatform;
 	platformId: number;
 	currency: Currency;
 	accountType: AccountType;
 	availableBalance: number;
 	lockedBalance?: number; // Locked balance (e.g., in open orders)
+	tradingAccountId: mongoose.Types.ObjectId; // reference to the user-trading-account _id
 }
 
 const UserTradingAccountBalanceSchema = new Schema<IUserTradingAccountBalance>(
 	{
 		userId: { type: String, required: true },
+		tradingAccountId: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "user-trading-account",
+			required: true,
+		},
 		platformName: {
 			type: String,
-			enum: Platform,
+			enum: TradingPlatform,
 			required: true,
 		},
 		platformId: { type: Number, required: true },
@@ -38,6 +44,7 @@ const UserTradingAccountBalanceSchema = new Schema<IUserTradingAccountBalance>(
 
 UserTradingAccountBalanceSchema.index({
 	userId: 1,
+	tradingAccountId: 1,
 	platformName: 1,
 	currency: 1,
 	accountType: 1,

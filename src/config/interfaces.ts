@@ -1,6 +1,13 @@
 import { IUserTradingAccount } from "../models/UserTradingAccount";
-import { IUserTradingAccountBalance } from "../models/UserTradingBalance";
-import { AccountConnectionStatus, AccountType, Category, Currency, UserRoles } from "./enums";
+import { IUserTradingAccountBalance } from "../models/UserTradingAccountBalance";
+import {
+	AccountConnectionStatus,
+	AccountType,
+	Category,
+	Currency,
+	TradingPlatform,
+	UserRoles,
+} from "./enums";
 
 export interface IAccessToken {
 	id: string;
@@ -24,7 +31,7 @@ export interface IUserAccountWithBalance {
 	id: string;
 	platformName: string;
 	platformId: number;
-	plaformLogo: string;
+	// plaformLogo: string;
 	category: Category;
 	errorMessages: string[];
 	connectionStatus: AccountConnectionStatus;
@@ -39,4 +46,10 @@ export interface IUpdateAccount {
 export interface IUpdateBalance {
 	id: string;
 	tradingBalanceData: Partial<IUserTradingAccountBalance>;
+}
+export interface ITradingPlatform {
+	name: TradingPlatform;
+	id: number;
+	logo: string;
+	category: Category;
 }

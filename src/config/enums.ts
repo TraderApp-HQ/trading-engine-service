@@ -7,6 +7,7 @@ export enum AccountConnectionStatus {
 export enum AccountType {
 	SPOT = "SPOT",
 	FUTURES = "FUTURES",
+	MARGIN = "MARGIN",
 }
 
 export enum Currency {
@@ -14,7 +15,7 @@ export enum Currency {
 	BTC = "BTC",
 }
 
-export enum Platform {
+export enum TradingPlatform {
 	BINANCE = "BINANCE",
 }
 
