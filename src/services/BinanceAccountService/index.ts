@@ -106,14 +106,18 @@ class BinanceAccountService extends BaseTradingAccount {
 					...spotAccountBalances.map((balance) => ({
 						currency: balance.asset,
 						accountType: AccountType.SPOT,
-						availableBalance: Number(balance.free),
-						lockedBalance: Number(balance.locked),
+						availableBalance: Number(Number(balance.free).toFixed(4)),
+						lockedBalance: Number(Number(balance.locked).toFixed(4)),
 					})),
 					...futuresAccountBalances.map((balance) => ({
 						currency: balance.asset,
 						accountType: AccountType.FUTURES,
-						availableBalance: Number(balance.availableBalance),
-						lockedBalance: Number(balance.balance) - Number(balance.availableBalance),
+						availableBalance: Number(Number(balance.availableBalance).toFixed(4)),
+						lockedBalance: Number(
+							Number(
+								Number(balance.balance) - Number(balance.availableBalance)
+							).toFixed(4)
+						),
 					})),
 				],
 			};
