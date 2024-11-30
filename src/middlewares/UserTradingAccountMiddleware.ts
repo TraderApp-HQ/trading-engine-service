@@ -3,7 +3,7 @@ import { checkUser } from "../utils/tokens";
 import Joi from "joi";
 import { Category, ConnectionType } from "../config/enums";
 
-export async function validateAddTradingAccountRequest(
+export async function validateTradingAccountManualConnectionRequest(
 	req: Request,
 	res: Response,
 	next: NextFunction
@@ -18,8 +18,6 @@ export async function validateAddTradingAccountRequest(
 		const schema = Joi.object({
 			userId: Joi.string().required().label("User Id"),
 			platformName: Joi.string().required().label("Platform Name"),
-			platformId: Joi.number().required().label("Platform Id"),
-			platformLogo: Joi.string().required().label("Platform Logo"),
 			apiKey: Joi.string().pattern(apiKeyRegex).required().label("API Key").messages({
 				"string.pattern.base": "API Key is invalid",
 			}),
@@ -49,7 +47,7 @@ export async function validateAddTradingAccountRequest(
 	}
 }
 
-export async function validateDeleteTradingAccountRequest(
+export async function validateDeleteUserTradingAccountRequest(
 	req: Request,
 	res: Response,
 	next: NextFunction
@@ -59,14 +57,14 @@ export async function validateDeleteTradingAccountRequest(
 
 		// define validation schema
 		const schema = Joi.object({
-			id: Joi.string().required().label("Id"),
+			userId: Joi.string().required().label("User Id"),
+			platformName: Joi.string().required().label("Platform Name"),
 		});
 
 		// validate request
-		const { error } = schema.validate(req.params);
+		const { error } = schema.validate(req.query);
 
 		if (error) {
-			// strip string of quotes
 			error.message = error.message.replace(/\"/g, "");
 			next(error);
 		}
@@ -76,7 +74,7 @@ export async function validateDeleteTradingAccountRequest(
 	}
 }
 
-export async function validateGetUserAccountsWithBalancesRequest(
+export async function validateGetUserTradingAccountsRequest(
 	req: Request,
 	res: Response,
 	next: NextFunction
@@ -90,8 +88,7 @@ export async function validateGetUserAccountsWithBalancesRequest(
 		});
 
 		// validate request
-		const { error } = schema.validate(req.params);
-
+		const { error } = schema.validate(req.query);
 		if (error) {
 			// strip string of quotes
 			error.message = error.message.replace(/\"/g, "");
@@ -103,7 +100,7 @@ export async function validateGetUserAccountsWithBalancesRequest(
 	}
 }
 
-export async function validatehandleGetUserAccountbyIdRequest(
+export async function validateGetUserTradingAccountRequest(
 	req: Request,
 	res: Response,
 	next: NextFunction
@@ -113,11 +110,12 @@ export async function validatehandleGetUserAccountbyIdRequest(
 
 		// define validation schema
 		const schema = Joi.object({
-			tradingAccountId: Joi.string().required().label("tradingAccount Id"),
+			userId: Joi.string().required().label("User Id"),
+			platformName: Joi.string().required().label("Platform Name"),
 		});
 
 		// validate request
-		const { error } = schema.validate(req.params);
+		const { error } = schema.validate(req.query);
 
 		if (error) {
 			// strip string of quotes
@@ -141,16 +139,11 @@ export async function validateUpdateTradingAccountRequest(
 		// Define regex for API key and secret validation
 		const apiKeyRegex = /^[A-Za-z0-9]{64}$/;
 
-		// define validation schemas
-		const paramsSchema = Joi.object({
-			tradingAccountId: Joi.string().required().label("Trading Account ID"),
-		});
-
 		const bodySchema = Joi.object({
 			userId: Joi.string().required().label("User ID"),
 			platformName: Joi.string().required().label("Platform Name"),
-			platformId: Joi.number().required().label("Platform ID"),
-			platformLogo: Joi.string().required().label("Platform Logo"),
+			// platformId: Joi.number().required().label("Platform ID"),
+			// platformLogo: Joi.string().required().label("Platform Logo"),
 			apiKey: Joi.string().pattern(apiKeyRegex).required().label("API Key").messages({
 				"string.pattern.base": "API Key is invalid",
 			}),
@@ -167,22 +160,11 @@ export async function validateUpdateTradingAccountRequest(
 				.label("Connection Type"),
 		});
 
-		// validate request parameters and body
-		const paramsValidation = paramsSchema.validate(req.params);
 		const bodyValidation = bodySchema.validate(req.body);
-
-		if (paramsValidation.error) {
-			const error = paramsValidation.error;
-			error.message = error.message.replace(/\"/g, ""); // Strip string of quotes
-			next(error);
-			throw error;
-		}
-
 		if (bodyValidation.error) {
 			const error = bodyValidation.error;
 			error.message = error.message.replace(/\"/g, ""); // Strip string of quotes
 			next(error);
-			throw error;
 		}
 
 		next();
