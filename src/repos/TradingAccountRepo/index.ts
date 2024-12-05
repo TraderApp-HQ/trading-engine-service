@@ -137,14 +137,18 @@ class TradingAccountRepository {
 	}
 
 	public async archiveTradingAccount({ userId, platformName }: ITradingAccountInput) {
-		await UserTradingAccount.findOneAndUpdate(
-			{ userId, platformName },
-			{
-				$set: {
-					connectionStatus: AccountConnectionStatus.ARCHIVED,
-				},
-			}
-		);
+		const promises = [
+			UserTradingAccount.findOneAndUpdate(
+				{ userId, platformName },
+				{
+					$set: {
+						connectionStatus: AccountConnectionStatus.ARCHIVED,
+					},
+				}
+			),
+			UserTradingAccountBalance.deleteMany({ userId, platformName }),
+		];
+		await Promise.all(promises);
 	}
 
 	public async getUserTradingAccountsWithBalancesFromDb({
@@ -205,6 +209,7 @@ class TradingAccountRepository {
 		const tradingAccount = await UserTradingAccount.findOne({
 			userId,
 			platformName,
+			connectionStatus: { $ne: AccountConnectionStatus.ARCHIVED },
 		}).lean<IUserTradingAccount>();
 
 		if (!tradingAccount) {
