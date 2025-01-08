@@ -106,18 +106,15 @@ class BinanceAccountService extends BaseTradingAccount {
 					...spotAccountBalances.map((balance) => ({
 						currency: balance.asset,
 						accountType: AccountType.SPOT,
-						availableBalance: Number(Number(balance.free).toFixed(4)),
-						lockedBalance: Number(Number(balance.locked).toFixed(4)),
+						availableBalance: parseFloat(balance.free),
+						lockedBalance: parseFloat(balance.locked),
 					})),
 					...futuresAccountBalances.map((balance) => ({
 						currency: balance.asset,
 						accountType: AccountType.FUTURES,
-						availableBalance: Number(Number(balance.availableBalance).toFixed(4)),
-						lockedBalance: Number(
-							Number(
-								Number(balance.balance) - Number(balance.availableBalance)
-							).toFixed(4)
-						),
+						availableBalance: parseFloat(balance.availableBalance),
+						lockedBalance:
+							parseFloat(balance.balance) - parseFloat(balance.availableBalance),
 					})),
 				],
 			};
@@ -132,7 +129,9 @@ class BinanceAccountService extends BaseTradingAccount {
 
 	public async processTradingAccountInfo() {
 		const accountData = (await this.getTradingAccountInfoFromApis()) as ITradingAccountInfo;
-		await this.tradingAccountRepo.processUserTradingAccountInfo(accountData);
+		await this.tradingAccountRepo.processUserTradingAccountInfo(accountData, {
+			isIpAddressWhitelistRequired: true,
+		});
 	}
 
 	public async deleteTradingAccount() {

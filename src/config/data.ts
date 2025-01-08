@@ -8,4 +8,10 @@ export const TradingPlatforms: ITradingPlatform[] = [
 		logo: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png",
 		category: Category.CRYPTO,
 	},
+	{
+		name: TradingPlatform.KUCOIN,
+		id: 311,
+		logo: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/311.png",
+		category: Category.CRYPTO,
+	},
 ];
