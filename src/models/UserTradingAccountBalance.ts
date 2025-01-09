@@ -46,6 +46,7 @@ UserTradingAccountBalanceSchema.index({
 	userId: 1,
 	tradingAccountId: 1,
 	platformName: 1,
+	platformId: 1,
 	currency: 1,
 	accountType: 1,
 });

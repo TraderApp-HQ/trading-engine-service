@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { checkUser } from "../utils/tokens";
 import Joi from "joi";
 import { Category, ConnectionType } from "../config/enums";
+import TradingAccountRepository from "../repos/TradingAccountRepo";
 
 export async function validateTradingAccountManualConnectionRequest(
 	req: Request,
@@ -12,18 +13,26 @@ export async function validateTradingAccountManualConnectionRequest(
 		await checkUser(req);
 
 		// Define regex for API key and secret validation
-		const apiKeyRegex = /^[A-Za-z0-9]{64}$/;
+		// const apiKeyRegex = /^[A-Za-z0-9]{64}$/;
+		// const apiKeyRegex = /^[A-Za-z0-9]{10,}$/;
 
 		// define validation schema
 		const schema = Joi.object({
 			userId: Joi.string().required().label("User Id"),
 			platformName: Joi.string().required().label("Platform Name"),
-			apiKey: Joi.string().pattern(apiKeyRegex).required().label("API Key").messages({
+			// apiKey: Joi.string().pattern(apiKeyRegex).required().label("API Key").messages({
+			// 	"string.pattern.base": "API Key is invalid",
+			// }),
+			// apiSecret: Joi.string().pattern(apiKeyRegex).required().label("API Secret").messages({
+			// 	"string.pattern.base": "API Secret is invalid",
+			// }),
+			apiKey: Joi.string().required().min(10).label("API Key").messages({
 				"string.pattern.base": "API Key is invalid",
 			}),
-			apiSecret: Joi.string().pattern(apiKeyRegex).required().label("API Secret").messages({
+			apiSecret: Joi.string().required().min(10).label("API Secret").messages({
 				"string.pattern.base": "API Secret is invalid",
 			}),
+			passphrase: Joi.string().label("Passphrase"),
 			category: Joi.string()
 				.valid(...Object.values(Category))
 				.required(),
@@ -41,6 +50,51 @@ export async function validateTradingAccountManualConnectionRequest(
 			next(error);
 			throw error;
 		}
+		next();
+	} catch (err: any) {
+		next(err);
+	}
+}
+
+export async function validateRefreshTradingAccountManualConnectionRequest(
+	req: Request,
+	res: Response,
+	next: NextFunction
+) {
+	try {
+		await checkUser(req);
+
+		// define validation schema
+		const schema = Joi.object({
+			userId: Joi.string().required().label("User Id"),
+			platformName: Joi.string().required().label("Platform Name"),
+			category: Joi.string()
+				.valid(...Object.values(Category))
+				.required(),
+			connectionType: Joi.string()
+				.valid(...Object.values(ConnectionType))
+				.required(),
+		});
+
+		// validate request
+		const { error } = schema.validate(req.body);
+
+		if (error) {
+			// strip string of quotes
+			error.message = error.message.replace(/\"/g, "");
+			next(error);
+			throw error;
+		}
+
+		const tradingRepo = new TradingAccountRepository();
+		const { apiKey, apiSecret, passphrase } = await tradingRepo.getUserTradingAccount({
+			userId: req.body.userId,
+			platformName: req.body.platformName,
+		});
+
+		req.body.apiKey = apiKey;
+		req.body.apiSecret = apiSecret;
+		req.body.passphrase = passphrase;
 		next();
 	} catch (err: any) {
 		next(err);

@@ -13,15 +13,16 @@ export const handleTradingAccountManualConnection = async (
 	next: NextFunction
 ): Promise<void> => {
 	try {
-		const accountData = req.body as IUserTradingAccount;
-		const { apiKey, apiSecret } = accountData;
+		const { platformName, userId, category, apiKey, apiSecret, passphrase } =
+			req.body as IUserTradingAccount;
 
 		const tradingAccountFatory = TradingAccountFactory.initTradingAccount({
-			platformName: accountData.platformName,
-			userId: accountData.userId,
-			category: accountData.category,
+			platformName,
+			userId,
+			category,
 			apiKey,
 			apiSecret,
+			passphrase,
 			connectionType: ConnectionType.MANUAL,
 		});
 
