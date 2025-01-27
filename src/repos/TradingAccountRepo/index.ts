@@ -17,7 +17,10 @@ export interface ITradingAccountInput {
 }
 
 class TradingAccountRepository {
-	public async processUserTradingAccountInfo(input: ITradingAccountInfo) {
+	public async processUserTradingAccountInfo(
+		input: ITradingAccountInfo,
+		{ isIpAddressWhitelistRequired }: { isIpAddressWhitelistRequired: boolean }
+	) {
 		// check if trading account has been connected before by a different user
 		const isExternalAccountConnected = await UserTradingAccount.findOne({
 			externalAccountUserId: input.externalAccountUserId,
@@ -39,7 +42,10 @@ class TradingAccountRepository {
 			connectionStatus: { $ne: AccountConnectionStatus.ARCHIVED },
 		});
 
-		const errorMessages = this.performTradingAccountHealthCheck(input);
+		const errorMessages = this.performTradingAccountHealthCheck(
+			input,
+			isIpAddressWhitelistRequired
+		);
 		const accountData: ITradingAccountInfo = {
 			...input,
 			errorMessages,
@@ -65,7 +71,10 @@ class TradingAccountRepository {
 		await this.saveTradingAccountInfoWithBalances(accountData);
 	}
 
-	private performTradingAccountHealthCheck(input: ITradingAccountInfo) {
+	private performTradingAccountHealthCheck(
+		input: ITradingAccountInfo,
+		isIpAddressWhitelistRequired: boolean
+	) {
 		const errorMessages = [];
 
 		if (input.isWithdrawalEnabled) {
@@ -80,7 +89,7 @@ class TradingAccountRepository {
 			errorMessages.push("SPOT trading is not enabled");
 		}
 
-		if (!input.isIpAddressWhitelisted) {
+		if (isIpAddressWhitelistRequired && !input.isIpAddressWhitelisted) {
 			errorMessages.push("TraderApp IP addresses haven't been whitelisted");
 		}
 
@@ -97,6 +106,9 @@ class TradingAccountRepository {
 					apiSecret: accountData.apiSecret
 						? encrypt(accountData.apiSecret)
 						: accountData.apiSecret,
+					passphrase: accountData.passphrase
+						? encrypt(accountData.passphrase)
+						: accountData.passphrase,
 					balances: undefined,
 				},
 			},
@@ -206,17 +218,7 @@ class TradingAccountRepository {
 		userId,
 		platformName,
 	}: ITradingAccountInput): Promise<Partial<ITradingAccountInfo>> {
-		const tradingAccount = await UserTradingAccount.findOne({
-			userId,
-			platformName,
-			connectionStatus: { $ne: AccountConnectionStatus.ARCHIVED },
-		}).lean<IUserTradingAccount>();
-
-		if (!tradingAccount) {
-			const error = new Error("Trading account does not exist");
-			error.name = ErrorMessage.notfound;
-			throw error;
-		}
+		const tradingAccount = await this.getUserTradingAccount({ userId, platformName });
 
 		// Fetch all balances associated with this trading account
 		const balances = await UserTradingAccountBalance.find({
@@ -233,10 +235,6 @@ class TradingAccountRepository {
 			lockedBalance: balance.lockedBalance,
 		}));
 
-		if (tradingAccount.apiKey && tradingAccount.apiSecret) {
-			tradingAccount.apiKey = decrypt(tradingAccount.apiKey);
-			tradingAccount.apiSecret = decrypt(tradingAccount.apiSecret);
-		}
 		// Construct the result object
 		const result: Partial<ITradingAccountInfo> = {
 			accountId: (tradingAccount._id as string).toString(),
@@ -245,8 +243,6 @@ class TradingAccountRepository {
 				TradingPlatforms.find((tp) => tp.name === tradingAccount.platformName)?.logo ?? "",
 			platformName: tradingAccount.platformName,
 			platformId: tradingAccount.platformId,
-			apiKey: tradingAccount.apiKey,
-			apiSecret: tradingAccount.apiSecret,
 			externalAccountUserId: tradingAccount.externalAccountUserId,
 			isWithdrawalEnabled: tradingAccount.isWithdrawalEnabled,
 			isFuturesTradingEnabled: tradingAccount.isFuturesTradingEnabled,
@@ -260,6 +256,35 @@ class TradingAccountRepository {
 		};
 
 		return result;
+	}
+
+	public async getUserTradingAccount({
+		userId,
+		platformName,
+	}: ITradingAccountInput): Promise<IUserTradingAccount> {
+		const tradingAccount = await UserTradingAccount.findOne({
+			userId,
+			platformName,
+			connectionStatus: { $ne: AccountConnectionStatus.ARCHIVED },
+		}).lean<IUserTradingAccount>();
+
+		if (!tradingAccount) {
+			const error = new Error("Trading account does not exist");
+			error.name = ErrorMessage.notfound;
+			throw error;
+		}
+
+		tradingAccount.apiKey = tradingAccount.apiKey
+			? decrypt(tradingAccount.apiKey)
+			: tradingAccount.apiKey;
+		tradingAccount.apiSecret = tradingAccount.apiSecret
+			? decrypt(tradingAccount.apiSecret)
+			: tradingAccount.apiSecret;
+		tradingAccount.passphrase = tradingAccount.passphrase
+			? decrypt(tradingAccount.passphrase)
+			: tradingAccount.passphrase;
+
+		return tradingAccount;
 	}
 }
 

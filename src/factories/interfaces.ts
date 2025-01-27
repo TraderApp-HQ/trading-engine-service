@@ -22,6 +22,7 @@ export interface ITradingAccountInfo {
 	platformLogo: string;
 	apiKey?: string;
 	apiSecret?: string;
+	passphrase?: string;
 	accessToken?: string;
 	refreshToken?: string;
 	externalAccountUserId: string; // Unique identifier returned by trading plaforms like Binance

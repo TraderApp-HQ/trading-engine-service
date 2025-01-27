@@ -7,6 +7,7 @@ export interface ITradingAccountInput {
 	userId: string;
 	apiKey?: string;
 	apiSecret?: string;
+	passphrase?: string;
 	accessToken?: string;
 	refreshToken?: string;
 	platformName: TradingPlatform;
@@ -19,6 +20,7 @@ export abstract class BaseTradingAccount implements ITradingAccount {
 	apiKey?: string;
 	apiSecret?: string;
 	accessToken?: string;
+	passphrase?: string;
 	refreshToken?: string;
 	platformName: TradingPlatform;
 	category?: Category;
@@ -36,6 +38,7 @@ export abstract class BaseTradingAccount implements ITradingAccount {
 		this.userId = input.userId;
 		this.apiKey = input.apiKey;
 		this.apiSecret = input.apiSecret;
+		this.passphrase = input.passphrase;
 		this.accessToken = input.accessToken;
 		this.refreshToken = input.refreshToken;
 		this.platformName = input.platformName;
