@@ -70,20 +70,57 @@ class BinanceAccountService extends BaseTradingAccount {
 			`https://fapi.binance.com/fapi/v3/balance?${queryString}&signature=${signature}`,
 		];
 
+		let apiRestrictionsData: IBinanceApiKeysPermissions | null = null;
+		let spotAccountData: IBinanceSpotAccountInfo | null = null;
+		let futuresAccountData: IBinanceFuturesAccountBalances[] | null = [
+			{
+				asset: Currency.USDT,
+				balance: "0.00000000",
+				availableBalance: "0.00000000",
+			},
+			{
+				asset: Currency.BTC,
+				balance: "0.00000000",
+				availableBalance: "0.00000000",
+			},
+		] as IBinanceFuturesAccountBalances[];
+
 		try {
-			const responses = await Promise.all(
+			const responses = await Promise.allSettled(
 				endpoints.map(async (url) => new this.apiClient(url).get({ options: { headers } }))
 			);
 
-			const apiRestrictionsData = responses[0] as IBinanceApiKeysPermissions;
-			const spotAccountData = responses[1] as IBinanceSpotAccountInfo;
-			const futuresAccountData = responses[2] as IBinanceFuturesAccountBalances[];
+			// Handle API restrictions data
+			if (responses[0].status === "fulfilled") {
+				apiRestrictionsData = responses[0].value as IBinanceApiKeysPermissions;
+				console.log("API Restrictions Data:", apiRestrictionsData);
+			} else {
+				console.log("Error fetching API Restrictions:", responses[0].reason);
+				throw new Error("Error fetching API Restrictions for Binance");
+			}
 
-			const spotAccountBalances = spotAccountData.balances.filter(
+			// Handle Spot account data
+			if (responses[1].status === "fulfilled") {
+				spotAccountData = responses[1].value as IBinanceSpotAccountInfo;
+				console.log("Spot Account Data:", spotAccountData);
+			} else {
+				console.log("Error fetching Spot Account Data:", responses[1].reason);
+				throw new Error("Error fetching Spot Account Data for Binance");
+			}
+
+			// Handle Futures account data
+			if (responses[2].status === "fulfilled") {
+				futuresAccountData = responses[2].value as IBinanceFuturesAccountBalances[];
+				console.log("Futures Account Data:", futuresAccountData);
+			} else {
+				console.log("Error fetching Futures Account Data:", responses[2].reason);
+			}
+
+			const spotAccountBalances = spotAccountData?.balances.filter(
 				(x: { asset: string }) => x.asset === Currency.BTC || x.asset === Currency.USDT
 			);
 
-			const futuresAccountBalances = futuresAccountData.filter(
+			const futuresAccountBalances = futuresAccountData?.filter(
 				(x: { asset: string }) => x.asset === Currency.BTC || x.asset === Currency.USDT
 			);
 

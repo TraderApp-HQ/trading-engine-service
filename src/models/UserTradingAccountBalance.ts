@@ -29,12 +29,12 @@ const UserTradingAccountBalanceSchema = new Schema<IUserTradingAccountBalance>(
 		currency: {
 			type: String,
 			enum: Currency,
-			default: Currency.USDT,
+			// default: Currency.USDT,
 		},
 		accountType: {
 			type: String,
 			enum: AccountType,
-			default: AccountType.SPOT,
+			// default: AccountType.SPOT,
 		},
 		availableBalance: { type: Number, required: true },
 		lockedBalance: { type: Number, required: true },
