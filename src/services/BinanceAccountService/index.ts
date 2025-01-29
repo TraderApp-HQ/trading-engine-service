@@ -96,7 +96,7 @@ class BinanceAccountService extends BaseTradingAccount {
 				console.log("API Restrictions Data:", apiRestrictionsData);
 			} else {
 				console.log("Error fetching API Restrictions:", responses[0].reason);
-				throw new Error("Error fetching API Restrictions for Binance");
+				throw responses[0].reason;
 			}
 
 			// Handle Spot account data
@@ -105,7 +105,7 @@ class BinanceAccountService extends BaseTradingAccount {
 				console.log("Spot Account Data:", spotAccountData);
 			} else {
 				console.log("Error fetching Spot Account Data:", responses[1].reason);
-				throw new Error("Error fetching Spot Account Data for Binance");
+				throw responses[1].reason;
 			}
 
 			// Handle Futures account data
