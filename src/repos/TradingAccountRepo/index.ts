@@ -1,6 +1,7 @@
 import { ErrorMessage } from "../../config/constants";
 import { TradingPlatforms } from "../../config/data";
 import { AccountConnectionStatus, TradingPlatform } from "../../config/enums";
+import { IAddFund } from "../../config/interfaces";
 import { ITradingAccountBalances, ITradingAccountInfo } from "../../factories/interfaces";
 import UserTradingAccount, { IUserTradingAccount } from "../../models/UserTradingAccount";
 import UserTradingAccountBalance, {
@@ -285,6 +286,32 @@ class TradingAccountRepository {
 			: tradingAccount.passphrase;
 
 		return tradingAccount;
+	}
+
+	public async addFundToTradingAccount({
+		userId,
+		platformName,
+		accountType,
+		amount,
+		currency,
+	}: IAddFund): Promise<void> {
+		try {
+			await UserTradingAccountBalance.findOneAndUpdate(
+				{
+					userId,
+					platformName,
+					accountType,
+					currency,
+				},
+				{
+					$inc: {
+						availableBalance: amount,
+					},
+				}
+			);
+		} catch (error) {
+			throw new Error("Failed to add fund to trading account");
+		}
 	}
 }
 

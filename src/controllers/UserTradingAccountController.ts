@@ -6,6 +6,7 @@ import { ResponseMessage, ResponseType } from "../config/constants";
 import { ConnectionType, TradingPlatform } from "../config/enums";
 import TradingAccountFactory from "../factories/TradingAccountFactory";
 import TradingAccountRepository from "../repos/TradingAccountRepo";
+import { IAddFund } from "../config/interfaces";
 
 export const handleTradingAccountManualConnection = async (
 	req: Request,
@@ -109,6 +110,34 @@ export const handleGetUserTradingAccount = async (
 				type: ResponseType.SUCCESS,
 				object: tradingAccount,
 				message: ResponseMessage.GET_USER_TRADING_ACCOUNT_WITH_BALANCES,
+			})
+		);
+	} catch (error) {
+		next(error);
+	}
+};
+
+export const handleAddFundToTradingAccount = async (
+	req: Request,
+	res: Response,
+	next: NextFunction
+): Promise<void> => {
+	try {
+		const { platformName, userId, accountType, amount, currency } = req.body as IAddFund;
+
+		const tradingRepo = new TradingAccountRepository();
+		await tradingRepo.addFundToTradingAccount({
+			userId,
+			platformName,
+			accountType,
+			amount,
+			currency,
+		});
+
+		res.status(HttpStatus.OK).json(
+			apiResponseHandler({
+				type: ResponseType.SUCCESS,
+				message: "Fund added Successfully",
 			})
 		);
 	} catch (error) {

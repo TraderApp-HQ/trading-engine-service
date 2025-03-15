@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { checkUser } from "../utils/tokens";
+import { checkAdmin, checkUser } from "../utils/tokens";
 import Joi from "joi";
-import { Category, ConnectionType } from "../config/enums";
+import { AccountType, Category, ConnectionType, Currency, TradingPlatform } from "../config/enums";
 import TradingAccountRepository from "../repos/TradingAccountRepo";
 
 export async function validateTradingAccountManualConnectionRequest(
@@ -219,6 +219,46 @@ export async function validateUpdateTradingAccountRequest(
 			const error = bodyValidation.error;
 			error.message = error.message.replace(/\"/g, ""); // Strip string of quotes
 			next(error);
+		}
+
+		next();
+	} catch (err: any) {
+		next(err);
+	}
+}
+
+export async function validateAddFundToTradingAccountRequest(
+	req: Request,
+	res: Response,
+	next: NextFunction
+) {
+	try {
+		await checkAdmin(req);
+
+		const bodySchema = Joi.object({
+			userId: Joi.string().required().label("User ID"),
+			platformName: Joi.string()
+				.valid(...Object.values(TradingPlatform))
+				.required()
+				.label("Platform Name"),
+			accountType: Joi.string()
+				.valid(...Object.values(AccountType))
+				.required()
+				.label("Account Type"),
+			currency: Joi.string()
+				.valid(...Object.values(Currency))
+				.required()
+				.label("Currency"),
+			amount: Joi.number().min(0.1).required().label("Amount"),
+		});
+
+		const { error } = bodySchema.validate(req.body);
+
+		if (error) {
+			// strip string of double quotes
+			error.message = error.message.replace(/\"/g, "");
+			next(error);
+			return;
 		}
 
 		next();

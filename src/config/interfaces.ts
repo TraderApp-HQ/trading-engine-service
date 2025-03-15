@@ -53,3 +53,10 @@ export interface ITradingPlatform {
 	logo: string;
 	category: Category;
 }
+export interface IAddFund {
+	userId: string;
+	platformName: TradingPlatform;
+	accountType: AccountType;
+	currency: Currency;
+	amount: number;
+}
