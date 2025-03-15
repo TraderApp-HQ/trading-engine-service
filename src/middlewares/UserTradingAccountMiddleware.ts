@@ -3,6 +3,7 @@ import { checkAdmin, checkUser } from "../utils/tokens";
 import Joi from "joi";
 import { AccountType, Category, ConnectionType, Currency, TradingPlatform } from "../config/enums";
 import TradingAccountRepository from "../repos/TradingAccountRepo";
+import { FeatureFlagManager } from "../utils/helpers/SplitIOClient";
 
 export async function validateTradingAccountManualConnectionRequest(
 	req: Request,
@@ -233,6 +234,18 @@ export async function validateAddFundToTradingAccountRequest(
 	next: NextFunction
 ) {
 	try {
+		const userId = req.body.userId as string;
+		const featureFlags = new FeatureFlagManager();
+		const isFeatureFlagOn = await featureFlags.checkToggleFlag(
+			"release-referral-tracking",
+			userId
+		);
+
+		// Check if feature flag is enabled
+		if (!isFeatureFlagOn) {
+			throw new Error("Operation not authorised.");
+		}
+
 		await checkAdmin(req);
 
 		const bodySchema = Joi.object({
