@@ -4,6 +4,7 @@ import Joi from "joi";
 import { AccountType, Category, ConnectionType, Currency, TradingPlatform } from "../config/enums";
 import TradingAccountRepository from "../repos/TradingAccountRepo";
 import { FeatureFlagManager } from "../utils/helpers/SplitIOClient";
+import { ErrorMessage } from "../config/constants";
 
 export async function validateTradingAccountManualConnectionRequest(
 	req: Request,
@@ -243,7 +244,9 @@ export async function validateAddFundToTradingAccountRequest(
 
 		// Check if feature flag is enabled
 		if (!isFeatureFlagOn) {
-			throw new Error("Operation not authorised.");
+			const error = new Error("This operation is forbidden.");
+			error.name = ErrorMessage.forbidden;
+			next(error);
 		}
 
 		await checkAdmin(req);
