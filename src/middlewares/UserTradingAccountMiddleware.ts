@@ -246,7 +246,7 @@ export async function validateAddFundToTradingAccountRequest(
 		if (!isFeatureFlagOn) {
 			const error = new Error("This operation is forbidden.");
 			error.name = ErrorMessage.forbidden;
-			next(error);
+			throw error;
 		}
 
 		await checkAdmin(req);
