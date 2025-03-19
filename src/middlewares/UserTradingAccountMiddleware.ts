@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-import { checkUser } from "../utils/tokens";
+import { checkAdmin, checkUser } from "../utils/tokens";
 import Joi from "joi";
-import { Category, ConnectionType } from "../config/enums";
+import { AccountType, Category, ConnectionType, Currency, TradingPlatform } from "../config/enums";
 import TradingAccountRepository from "../repos/TradingAccountRepo";
+import { FeatureFlagManager } from "../utils/helpers/SplitIOClient";
+import { ErrorMessage } from "../config/constants";
 
 export async function validateTradingAccountManualConnectionRequest(
 	req: Request,
@@ -219,6 +221,60 @@ export async function validateUpdateTradingAccountRequest(
 			const error = bodyValidation.error;
 			error.message = error.message.replace(/\"/g, ""); // Strip string of quotes
 			next(error);
+		}
+
+		next();
+	} catch (err: any) {
+		next(err);
+	}
+}
+
+export async function validateAddFundToTradingAccountRequest(
+	req: Request,
+	res: Response,
+	next: NextFunction
+) {
+	try {
+		const userId = req.body.userId as string;
+		const featureFlags = new FeatureFlagManager();
+		const isFeatureFlagOn = await featureFlags.checkToggleFlag(
+			"release-referral-tracking",
+			userId
+		);
+
+		// Check if feature flag is enabled
+		if (!isFeatureFlagOn) {
+			const error = new Error("This operation is forbidden.");
+			error.name = ErrorMessage.forbidden;
+			throw error;
+		}
+
+		await checkAdmin(req);
+
+		const bodySchema = Joi.object({
+			userId: Joi.string().required().label("User ID"),
+			platformName: Joi.string()
+				.valid(...Object.values(TradingPlatform))
+				.required()
+				.label("Platform Name"),
+			accountType: Joi.string()
+				.valid(...Object.values(AccountType))
+				.required()
+				.label("Account Type"),
+			currency: Joi.string()
+				.valid(...Object.values(Currency))
+				.required()
+				.label("Currency"),
+			amount: Joi.number().min(0.1).required().label("Amount"),
+		});
+
+		const { error } = bodySchema.validate(req.body);
+
+		if (error) {
+			// strip string of double quotes
+			error.message = error.message.replace(/\"/g, "");
+			next(error);
+			return;
 		}
 
 		next();

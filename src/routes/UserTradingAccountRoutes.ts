@@ -4,6 +4,7 @@ import {
 	handleDeleteUserTradingAccount,
 	handleGetUserTradingAccount,
 	handleGetUserTradingAccounts,
+	handleAddFundToTradingAccount,
 } from "../controllers/UserTradingAccountController";
 import {
 	validateTradingAccountManualConnectionRequest,
@@ -11,6 +12,7 @@ import {
 	validateGetUserTradingAccountsRequest,
 	validateGetUserTradingAccountRequest,
 	validateRefreshTradingAccountManualConnectionRequest,
+	validateAddFundToTradingAccountRequest,
 } from "../middlewares/UserTradingAccountMiddleware";
 
 const router = Router();
@@ -27,6 +29,7 @@ router.post(
 	handleTradingAccountManualConnection
 );
 router.patch("/delete", validateDeleteUserTradingAccountRequest, handleDeleteUserTradingAccount);
+router.patch("/add-fund", validateAddFundToTradingAccountRequest, handleAddFundToTradingAccount);
 router.get("/one", validateGetUserTradingAccountRequest, handleGetUserTradingAccount);
 router.get("/all", validateGetUserTradingAccountsRequest, handleGetUserTradingAccounts);
 

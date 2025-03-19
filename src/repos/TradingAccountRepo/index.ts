@@ -1,12 +1,14 @@
 import { ErrorMessage } from "../../config/constants";
 import { TradingPlatforms } from "../../config/data";
 import { AccountConnectionStatus, TradingPlatform } from "../../config/enums";
+import { IAddFund } from "../../config/interfaces";
 import { ITradingAccountBalances, ITradingAccountInfo } from "../../factories/interfaces";
 import UserTradingAccount, { IUserTradingAccount } from "../../models/UserTradingAccount";
 import UserTradingAccountBalance, {
 	IUserTradingAccountBalance,
 } from "../../models/UserTradingAccountBalance";
 import { decrypt, encrypt } from "../../utils/encryption";
+import { FeatureFlagManager } from "../../utils/helpers/SplitIOClient";
 
 export interface ITradingAccountsInput {
 	userId: string;
@@ -21,18 +23,29 @@ class TradingAccountRepository {
 		input: ITradingAccountInfo,
 		{ isIpAddressWhitelistRequired }: { isIpAddressWhitelistRequired: boolean }
 	) {
-		// check if trading account has been connected before by a different user
-		const isExternalAccountConnected = await UserTradingAccount.findOne({
-			externalAccountUserId: input.externalAccountUserId,
-			userId: { $ne: input.userId },
-		});
+		const { userId } = input;
+		const featureFlags = new FeatureFlagManager();
+		const isFeatureFlagOn = await featureFlags.checkToggleFlag(
+			"release-referral-tracking",
+			userId
+		);
 
-		if (isExternalAccountConnected) {
-			const error = new Error(
-				"Sorry, this account has already been connected by a different user"
-			);
-			error.name = ErrorMessage.forbidden;
-			throw error;
+		// Ensures this only runs in production with the help of the feature flag
+		// Allows for connection of same wallet to different users in development and staging but not in production
+		if (!isFeatureFlagOn) {
+			// check if trading account has been connected before by a different user
+			const isExternalAccountConnected = await UserTradingAccount.findOne({
+				externalAccountUserId: input.externalAccountUserId,
+				userId: { $ne: input.userId },
+			});
+
+			if (isExternalAccountConnected) {
+				const error = new Error(
+					"Sorry, this account has already been connected by a different user"
+				);
+				error.name = ErrorMessage.forbidden;
+				throw error;
+			}
 		}
 
 		// check if user has an existing, non-archived connection of the same trading account
@@ -285,6 +298,32 @@ class TradingAccountRepository {
 			: tradingAccount.passphrase;
 
 		return tradingAccount;
+	}
+
+	public async addFundToTradingAccount({
+		userId,
+		platformName,
+		accountType,
+		amount,
+		currency,
+	}: IAddFund): Promise<void> {
+		try {
+			await UserTradingAccountBalance.findOneAndUpdate(
+				{
+					userId,
+					platformName,
+					accountType,
+					currency,
+				},
+				{
+					$inc: {
+						availableBalance: amount,
+					},
+				}
+			);
+		} catch (error) {
+			throw new Error("Failed to add fund to trading account");
+		}
 	}
 }
 
