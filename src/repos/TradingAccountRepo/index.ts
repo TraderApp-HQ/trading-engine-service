@@ -316,7 +316,7 @@ class TradingAccountRepository {
 					currency,
 				},
 				{
-					$inc: {
+					$set: {
 						availableBalance: amount,
 					},
 				}
