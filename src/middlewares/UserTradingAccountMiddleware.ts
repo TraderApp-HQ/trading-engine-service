@@ -265,7 +265,7 @@ export async function validateAddFundToTradingAccountRequest(
 				.valid(...Object.values(Currency))
 				.required()
 				.label("Currency"),
-			amount: Joi.number().min(0.1).required().label("Amount"),
+			amount: Joi.number().min(0).required().label("Amount"),
 		});
 
 		const { error } = bodySchema.validate(req.body);
