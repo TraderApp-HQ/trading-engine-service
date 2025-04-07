@@ -2,6 +2,19 @@ import swaggerJsdoc from "swagger-jsdoc";
 
 import { ROUTES } from "../config/constants";
 import { createGetOrders } from "../documentation/orders";
+import {
+	manualConnection,
+	manualConnectionBody,
+	deleteAccountParams,
+	deleteAccount,
+	getUserAccountWithBalancesParams,
+	getUserAccountWithBalances,
+	getUserAccountbyId,
+	getUserAccountbyIdParams,
+	updateAccount,
+	updateAccountBody,
+	updateAccountParams,
+} from "../documentation/userTradingAccount";
 
 const options: swaggerJsdoc.Options = {
 	swaggerDefinition: {
@@ -12,14 +25,21 @@ const options: swaggerJsdoc.Options = {
 			description: "API documentation for Trading Engine Service for TraderApp",
 		},
 		components: {
-			securitySchemas: {
+			securitySchemes: {
 				bearerAuth: {
 					type: "http",
 					scheme: "bearer",
 					bearerFormat: "JWT",
 				},
 			},
-			schemas: {},
+			schemas: {
+				manualConnectionBody,
+				deleteAccountParams,
+				getUserAccountWithBalancesParams,
+				getUserAccountbyIdParams,
+				updateAccountParams,
+				updateAccountBody,
+			},
 		},
 		security: [
 			{
@@ -28,6 +48,11 @@ const options: swaggerJsdoc.Options = {
 		],
 		paths: {
 			[`/orders${ROUTES.getOrders}`]: { get: createGetOrders },
+			[`/account${ROUTES.manualConnection}`]: { post: manualConnection },
+			[`/account/delete/{id}`]: { patch: deleteAccount },
+			[`/account/{userId}`]: { get: getUserAccountWithBalances },
+			[`/account/trading/account/{tradingAccountId}`]: { get: getUserAccountbyId },
+			[`/account/update/{tradingAccountId}`]: { patch: updateAccount },
 		},
 	},
 	apis: ["./src/routes/*.ts"], // Point to your route files

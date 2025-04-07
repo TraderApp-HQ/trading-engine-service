@@ -83,6 +83,6 @@ jobs:
                   docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/trading-engine-service-dev:latest
                   docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/trading-engine-service-dev:$GITHUB_SHA
 
-            # - name: Update ECS service
-            #   run: |
-            #       aws ecs update-service --cluster traderapp_dev --service deploy_portfolios_service_dev --force-new-deployment
+            - name: Update ECS service
+              run: |
+                  aws ecs update-service --cluster traderapp_dev --service deploy_portfolios_service_dev --force-new-deployment

@@ -21,7 +21,8 @@
 		"no-useless-escape": "off",
 		"@typescript-eslint/no-dynamic-delete": "off",
 		"@typescript-eslint/dot-notation": "off",
-		"no-useless-catch": "off"
+		"no-useless-catch": "off",
+		"@typescript-eslint/no-floating-promises": "off"
 	},
 	"ignorePatterns": ["*.json", "prisma/**", "Dockerfile"]
 }
