@@ -4,6 +4,7 @@ export const ENVIRONMENTS: Record<string, string> = Object.freeze({
 	development: "dev",
 	staging: "staging",
 	production: "prod",
+	hotfix: "hotfix",
 });
 
 export const ResponseType = {

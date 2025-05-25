@@ -57,6 +57,10 @@ function startServer() {
 		"https://www.web-dashboard-dev.traderapp.finance",
 		"https://web-dashboard-staging.traderapp.finance",
 		"https://www.web-dashboard-staging.traderapp.finance",
+		"https://web-dashboard-hotfix.traderapp.finance",
+		"https://www.web-dashboard-hotfix.traderapp.finance",
+		"https://dashboard.traderapp.finance",
+		"https://www.dashboard.traderapp.finance",
 	];
 
 	const corsOptions = {
