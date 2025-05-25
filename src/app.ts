@@ -1,5 +1,4 @@
 import express, { Application, Request, Response, NextFunction } from "express";
-import mongoose from "mongoose";
 import cors from "cors";
 import { config } from "dotenv";
 import swaggerUi from "swagger-ui-express";
@@ -11,6 +10,7 @@ import specs from "./utils/swagger";
 
 // import routes
 import { OrderRoutes, UserTradingAccountRoutes } from "./routes";
+import mongoose from "mongoose";
 
 config();
 
