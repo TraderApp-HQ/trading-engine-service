@@ -1,5 +1,4 @@
 import express, { Application, Request, Response, NextFunction } from "express";
-import mongoose from "mongoose";
 import cors from "cors";
 import { config } from "dotenv";
 import swaggerUi from "swagger-ui-express";
@@ -11,6 +10,7 @@ import specs from "./utils/swagger";
 
 // import routes
 import { OrderRoutes, UserTradingAccountRoutes } from "./routes";
+import mongoose from "mongoose";
 
 config();
 
@@ -57,6 +57,10 @@ function startServer() {
 		"https://www.web-dashboard-dev.traderapp.finance",
 		"https://web-dashboard-staging.traderapp.finance",
 		"https://www.web-dashboard-staging.traderapp.finance",
+		"https://web-dashboard-hotfix.traderapp.finance",
+		"https://www.web-dashboard-hotfix.traderapp.finance",
+		"https://dashboard.traderapp.finance",
+		"https://www.dashboard.traderapp.finance",
 	];
 
 	const corsOptions = {
