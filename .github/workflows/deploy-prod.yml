@@ -27,7 +27,7 @@ jobs:
                   node-version: 16.15
 
             - name: Install dependencies
-              run: npm install --force
+              run: npm install --include=dev --force
 
             - name: Build
               run: npm run build
