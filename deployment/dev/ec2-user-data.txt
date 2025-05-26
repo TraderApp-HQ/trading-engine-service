@@ -6,11 +6,11 @@ ENV="dev"
 sudo yum update -y
 sudo yum install -y aws-cli docker ruby wget
 
-# Install a specific version of Node.js (16.5) using nvm
+# Install a specific version of Node.js (20) using nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
 . ~/.nvm/nvm.sh
-nvm install 16.5
-nvm use 16.5
+nvm install 20
+nvm use 20
 
 # Start the Docker service
 sudo systemctl start docker
