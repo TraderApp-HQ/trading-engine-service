@@ -1,0 +1,111 @@
+name: tradingengine-service-deploy-staging
+
+on:
+    push:
+        branches:
+            - staging
+    workflow_dispatch: # Allow manual runs of the pipeline.
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        environment:
+            name: ${{ github.event_name == 'pull_request' && github.base_ref || github.ref_name }}
+
+        steps:
+            - name: Checkout code from branch
+              uses: actions/checkout@v2
+
+            - name: Set environment variables
+              run: |
+                  echo "NODE_ENV=${{ vars.NODE_ENV }}" >> $GITHUB_ENV
+                  echo "SERVICE=${{ vars.SERVICE }}" >> $GITHUB_ENV
+
+            - name: Install Node.js
+              uses: actions/setup-node@v2
+              with:
+                  node-version: 16.15
+
+            - name: Install dependencies
+              run: npm install --force
+
+            - name: Build
+              run: npm run build
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v1
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: ${{ vars.AWS_REGION }}
+
+            - name: Start
+              run: npm run start &
+
+    push-docker-image:
+        runs-on: ubuntu-latest
+        environment:
+            name: ${{ github.event_name == 'pull_request' && github.base_ref || github.ref_name }}
+        needs: build
+
+        steps:
+            - name: Check out code from branch
+              uses: actions/checkout@v2
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v1
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: ${{ vars.AWS_REGION }}
+
+            - name: Login to Amazon ECR
+              id: ecr-login
+              uses: aws-actions/amazon-ecr-login@v1
+
+            - name: Build and Push Docker Image
+              id: build-image
+              env:
+                  ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+                  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+                  IMAGE_TAG: ${{ github.run_id }}
+              run: |
+                  docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+                  docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+                  docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+                  docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+                  echo "Docker Image build and push is completed."
+
+    deploy-staging:
+        runs-on: ubuntu-latest
+        needs: push-docker-image
+        environment:
+            name: ${{ github.event_name == 'pull_request' && github.base_ref || github.ref_name }}
+
+        steps:
+            - name: Checkout code from branch
+              uses: actions/checkout@v2
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v1
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: ${{ vars.AWS_REGION }}
+
+            - name: Zip the deployment files
+              run: |
+                  cd deployment/staging/staging-tradingengineService-appspec
+                  zip -r ../../staging-tradingengineService-appspec.zip .
+
+            - name: Upload zip to S3
+              run: |
+                  aws s3 cp deployment/staging-tradingengineService-appspec.zip s3://${{ vars.STAGING_APPS_DEPLOYMENT_BUCKET }}/staging-tradingengineService-appspec.zip
+
+            - name: Trigger CodeDeploy
+              run: |
+                  aws deploy create-deployment \
+                    --application-name ${{ vars.CODEDEPLOY_APPLICATION_NAME }} \
+                    --deployment-group-name ${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP_NAME }} \
+                    --s3-location bucket=${{ vars.STAGING_APPS_DEPLOYMENT_BUCKET }},bundleType=zip,key=staging-tradingengineService-appspec.zip
+                  echo "Deployment triggered in CodeDeploy."

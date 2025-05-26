@@ -1,0 +1,49 @@
+#!/bin/bash
+SERVICE="tradingengine"
+ENV="prod"
+
+# Update package manager and install required packages
+sudo yum update -y
+sudo yum install -y aws-cli docker ruby wget
+
+# Install a specific version of Node.js (20) using nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+. ~/.nvm/nvm.sh
+nvm install 20
+nvm use 20
+
+# Start the Docker service
+sudo systemctl start docker
+
+# To clean the AMI of any previous agent caching information, run the following script
+#!/bin/bash
+CODEDEPLOY_BIN="/opt/codedeploy-agent/bin/codedeploy-agent"
+$CODEDEPLOY_BIN stop
+sudo yum erase codedeploy-agent -y
+
+# Change to your home directory
+cd /home/ec2-user
+
+# Download the CodeDeploy agent installer
+sudo wget https://aws-codedeploy-eu-west-1.s3.eu-west-1.amazonaws.com/latest/install
+
+# Set execute permissions on the install file
+sudo chmod +x ./install
+
+# To install the latest version of the CodeDeploy agent
+sudo ./install auto
+
+# To check that the service is running
+sudo systemctl status codedeploy-agent
+
+# Install cloudwatch agent
+sudo yum install amazon-cloudwatch-agent -y
+
+# Authenticate with ECR using the IAM role attached to the EC2 instance
+aws ecr get-login-password --region eu-west-1 | sudo docker login --username AWS --password-stdin 575439814610.dkr.ecr.eu-west-1.amazonaws.com
+
+# Pull the latest container image from ECR
+sudo docker pull 575439814610.dkr.ecr.eu-west-1.amazonaws.com/prod-tradingengine-service:latest
+
+# Run the container and map the container's port 8080 to the host's port 80
+sudo docker run -d -p 80:8080 -e NODE_ENV=production -e SERVICE=prod-tradingengineService --log-driver=awslogs --log-opt awslogs-region=eu-west-1 --log-opt awslogs-group=/aws/ec2/prod-tradingengineService --log-opt awslogs-create-group=true 575439814610.dkr.ecr.eu-west-1.amazonaws.com/prod-tradingengine-service:latest
