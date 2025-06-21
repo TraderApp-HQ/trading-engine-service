@@ -25,6 +25,7 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
+		"@aws-sdk/client-sqs": "^3.830.0",
 		"@prisma/client": "^5.8.1",
 		"@splitsoftware/splitio": "^11.1.0",
 		"@traderapp/shared-resources": "^1.0.5",
