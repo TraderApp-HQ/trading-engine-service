@@ -8,7 +8,7 @@ import TradingAccountFactory from "../factories/TradingAccountFactory";
 import TradingAccountRepository from "../repos/TradingAccountRepo";
 import { IAddFund } from "../config/interfaces";
 import { publishMessageToQueue } from "../utils/helpers/SQSClient/helpers";
-import { UserOnboardingStatusField } from "../utils/helpers/types";
+import { UserOnboardingChecklist } from "../utils/helpers/types";
 
 export const handleTradingAccountManualConnection = async (
 	req: Request,
@@ -33,10 +33,10 @@ export const handleTradingAccountManualConnection = async (
 
 		// Publish user task status to queue
 		await publishMessageToQueue({
-			queueUrl: process.env.UPDATE_USER_ONBOARDING_STATUS_QUEUE ?? "",
+			queueUrl: process.env.TRACK_USER_ONBOARDING_CHECKLIST_QUEUE ?? "",
 			message: {
 				userId,
-				taskField: UserOnboardingStatusField.IS_TRADING_ACCOUNT_CONNECTED,
+				onboardingChecklistItem: UserOnboardingChecklist.IS_TRADING_ACCOUNT_CONNECTED,
 			},
 		});
 
