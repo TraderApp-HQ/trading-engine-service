@@ -7,6 +7,7 @@ import {
 } from "../config/enums";
 
 export interface IUserTradingAccount extends Document {
+	id: string;
 	userId: string;
 	platformName: TradingPlatform;
 	platformId: number; // e.g., 112
@@ -60,6 +61,16 @@ const UserTradingAccountSchema = new Schema<IUserTradingAccount>(
 	},
 	{ versionKey: false, timestamps: true }
 );
+
+// Override the toJSON method to map _id to id
+UserTradingAccountSchema.set("toJSON", {
+	transform: (doc, ret) => {
+		ret.id = ret._id;
+		delete ret._id;
+		delete ret.__v;
+		return ret;
+	},
+});
 
 UserTradingAccountSchema.index({
 	userId: 1,

@@ -22,12 +22,6 @@ export async function validateTradingAccountManualConnectionRequest(
 		const schema = Joi.object({
 			userId: Joi.string().required().label("User Id"),
 			platformName: Joi.string().required().label("Platform Name"),
-			// apiKey: Joi.string().pattern(apiKeyRegex).required().label("API Key").messages({
-			// 	"string.pattern.base": "API Key is invalid",
-			// }),
-			// apiSecret: Joi.string().pattern(apiKeyRegex).required().label("API Secret").messages({
-			// 	"string.pattern.base": "API Secret is invalid",
-			// }),
 			apiKey: Joi.string().required().min(10).label("API Key").messages({
 				"string.pattern.base": "API Key is invalid",
 			}),

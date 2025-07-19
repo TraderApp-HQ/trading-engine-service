@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 import { AccountType, Currency, TradingPlatform } from "../config/enums";
 
 export interface IUserTradingAccountBalance extends Document {
+	id: string;
 	userId: string; // Reference to the user
 	platformName: TradingPlatform;
 	platformId: number;
@@ -41,6 +42,16 @@ const UserTradingAccountBalanceSchema = new Schema<IUserTradingAccountBalance>(
 	},
 	{ versionKey: false, timestamps: true }
 );
+
+// Override the toJSON method to map _id to id
+UserTradingAccountBalanceSchema.set("toJSON", {
+	transform: (doc, ret) => {
+		ret.id = ret._id;
+		delete ret._id;
+		delete ret.__v;
+		return ret;
+	},
+});
 
 UserTradingAccountBalanceSchema.index({
 	userId: 1,

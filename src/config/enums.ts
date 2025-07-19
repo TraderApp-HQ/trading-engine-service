@@ -73,3 +73,18 @@ export enum TradeSide {
 	LONG = "LONG",
 	SHORT = "SHORT",
 }
+
+export enum TradingRuleCategory {
+	DIVERSIFICATION = "DIVERSIFICATION",
+	RISK_MANAGEMENT = "RISK_MANAGEMENT",
+	POSITION_LIMITS = "POSITION_LIMITS", // Better name for "Overtrading"
+	DIRECTION_BALANCE = "DIRECTION_BALANCE", // Better name for balancing LONG/SHORT
+	EXIT_STRATEGY = "EXIT_STRATEGY",
+}
+
+export enum TradingRuleType {
+	PERCENTAGE = "PERCENTAGE",
+	AMOUNT = "AMOUNT",
+	COUNT = "COUNT",
+	STRATEGY = "STRATEGY",
+}

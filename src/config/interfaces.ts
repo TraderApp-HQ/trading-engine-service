@@ -6,6 +6,8 @@ import {
 	Category,
 	Currency,
 	TradingPlatform,
+	TradingRuleCategory,
+	TradingRuleType,
 	UserRoles,
 } from "./enums";
 
@@ -59,4 +61,31 @@ export interface IAddFund {
 	accountType: AccountType;
 	currency: Currency;
 	amount: number;
+}
+
+// Trading Rules Schema
+export interface TradingRule {
+	id: string;
+	name: string;
+	description: string;
+	tooltip: string;
+	category: TradingRuleCategory;
+	type: TradingRuleType;
+	value: number | string;
+	isEnabled: boolean;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+// User Trading Rules Schema
+export interface UserTradingRule {
+	id: string;
+	userId: string;
+	ruleId: string; // Reference to TradingRule
+	value: number | string;
+	isEnabled: boolean;
+	isCustomized: boolean; // Flag to indicate if user has modified from default
+	lastResetToDefault: Date | null;
+	createdAt: Date;
+	updatedAt: Date;
 }

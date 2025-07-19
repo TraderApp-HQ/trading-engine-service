@@ -4,6 +4,7 @@ import { TradeSide, TradeStatus } from "../config/enums";
 export interface ITrade extends Document {
 	// tradeId: string;
 	// batchId: Types.ObjectId; // Reference to the Batch
+	id: string;
 	userId: string; // Should reference the User model
 	signalId: string;
 	baseAsset: string;
@@ -19,22 +20,35 @@ export interface ITrade extends Document {
 	updatedAt: Date;
 }
 
-const TradeSchema = new Schema<ITrade>({
-	// tradeId: { type: String, unique: true, required: true },
-	// batchId: { type: Schema.Types.ObjectId, ref: "trade-batch", required: true },
-	userId: { type: String, required: true },
-	signalId: { type: String, required: true },
-	baseAsset: { type: String, required: true },
-	baseQuantity: { type: Number, required: true },
-	avgBuyPrice: { type: Number, required: true },
-	quoteCurrency: { type: String, required: true },
-	quoteTotal: { type: Number, required: true },
-	pair: { type: String, required: true },
-	side: { type: String, enum: Object.values(TradeSide), required: true },
-	pnl: { type: Number, default: 0 },
-	status: { type: String, enum: Object.values(TradeStatus), required: true },
-	createdAt: { type: Date, default: Date.now },
-	updatedAt: { type: Date, default: Date.now },
+const TradeSchema = new Schema<ITrade>(
+	{
+		// tradeId: { type: String, unique: true, required: true },
+		// batchId: { type: Schema.Types.ObjectId, ref: "trade-batch", required: true },
+		userId: { type: String, required: true },
+		signalId: { type: String, required: true },
+		baseAsset: { type: String, required: true },
+		baseQuantity: { type: Number, required: true },
+		avgBuyPrice: { type: Number, required: true },
+		quoteCurrency: { type: String, required: true },
+		quoteTotal: { type: Number, required: true },
+		pair: { type: String, required: true },
+		side: { type: String, enum: Object.values(TradeSide), required: true },
+		pnl: { type: Number, default: 0 },
+		status: { type: String, enum: Object.values(TradeStatus), required: true },
+		// createdAt: { type: Date, default: Date.now },
+		// updatedAt: { type: Date, default: Date.now },
+	},
+	{ versionKey: false, timestamps: true }
+);
+
+// Override the toJSON method to map _id to id
+TradeSchema.set("toJSON", {
+	transform: (doc, ret) => {
+		ret.id = ret._id;
+		delete ret._id;
+		delete ret.__v;
+		return ret;
+	},
 });
 
 TradeSchema.index({
