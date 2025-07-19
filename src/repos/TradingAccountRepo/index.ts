@@ -1,6 +1,11 @@
 import { ErrorMessage } from "../../config/constants";
 import { TradingPlatforms } from "../../config/data";
-import { AccountConnectionStatus, TradingPlatform } from "../../config/enums";
+import {
+	AccountConnectionStatus,
+	AccountType,
+	Currency,
+	TradingPlatform,
+} from "../../config/enums";
 import { IAddFund } from "../../config/interfaces";
 import { ITradingAccountBalances, ITradingAccountInfo } from "../../factories/interfaces";
 import UserTradingAccount, { IUserTradingAccount } from "../../models/UserTradingAccount";
@@ -25,14 +30,14 @@ class TradingAccountRepository {
 	) {
 		const { userId } = input;
 		const featureFlags = new FeatureFlagManager();
-		const isFeatureFlagOn = await featureFlags.checkToggleFlag(
+		const isDuplicateAccountAllowed = await featureFlags.checkToggleFlag(
 			"release-referral-tracking",
 			userId
 		);
 
 		// Ensures this only runs in production with the help of the feature flag
 		// Allows for connection of same wallet to different users in development and staging but not in production
-		if (!isFeatureFlagOn) {
+		if (!isDuplicateAccountAllowed) {
 			// check if trading account has been connected before by a different user
 			const isExternalAccountConnected = await UserTradingAccount.findOne({
 				externalAccountUserId: input.externalAccountUserId,
@@ -104,6 +109,16 @@ class TradingAccountRepository {
 
 		if (isIpAddressWhitelistRequired && !input.isIpAddressWhitelisted) {
 			errorMessages.push("TraderApp IP addresses haven't been whitelisted");
+		}
+
+		const isFuturesTradingUSDTBalanceAboveFifty = input.balances.some(
+			(balance) =>
+				balance.accountType === AccountType.FUTURES &&
+				balance.currency === Currency.USDT &&
+				balance.availableBalance >= 50
+		);
+		if (!isFuturesTradingUSDTBalanceAboveFifty) {
+			errorMessages.push("Futures trading USDT balance is less than 50 USDT");
 		}
 
 		return errorMessages;

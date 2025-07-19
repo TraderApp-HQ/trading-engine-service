@@ -39,6 +39,11 @@ export const handleTradingAccountManualConnection = async (
 				onboardingChecklistItem: UserOnboardingChecklist.IS_TRADING_ACCOUNT_CONNECTED,
 			},
 		});
+		console.log("=================== message published to queue ======================", {
+			queueUrl: process.env.TRACK_USER_ONBOARDING_CHECKLIST_QUEUE ?? "",
+			userId,
+			onboardingChecklistItem: UserOnboardingChecklist.IS_TRADING_ACCOUNT_CONNECTED,
+		});
 
 		res.status(HttpStatus.OK).json(
 			apiResponseHandler({
