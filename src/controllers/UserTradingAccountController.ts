@@ -7,6 +7,8 @@ import { ConnectionType, TradingPlatform } from "../config/enums";
 import TradingAccountFactory from "../factories/TradingAccountFactory";
 import TradingAccountRepository from "../repos/TradingAccountRepo";
 import { IAddFund } from "../config/interfaces";
+import { publishMessageToQueue } from "../utils/helpers/SQSClient/helpers";
+import { UserOnboardingChecklist } from "../utils/helpers/types";
 
 export const handleTradingAccountManualConnection = async (
 	req: Request,
@@ -28,6 +30,16 @@ export const handleTradingAccountManualConnection = async (
 		});
 
 		await tradingAccountFatory.processTradingAccountInfo();
+
+		// Publish user task status to queue
+		await publishMessageToQueue({
+			queueUrl: process.env.TRACK_USER_ONBOARDING_CHECKLIST_QUEUE ?? "",
+			message: {
+				userId,
+				onboardingChecklistItem: UserOnboardingChecklist.IS_TRADING_ACCOUNT_CONNECTED,
+			},
+		});
+
 		res.status(HttpStatus.OK).json(
 			apiResponseHandler({
 				type: ResponseType.SUCCESS,
