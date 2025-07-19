@@ -21,6 +21,7 @@ export interface IUserTradingAccount extends Document {
 	isFuturesTradingEnabled: boolean;
 	isSpotTradingEnabled: boolean;
 	isIpAddressWhitelisted?: boolean;
+	isTestModeEnabled?: boolean;
 	connectionStatus: AccountConnectionStatus;
 	errorMessages: string[]; // List of reasons/messages for the unhealthy status
 	category: Category;
@@ -44,6 +45,7 @@ const UserTradingAccountSchema = new Schema<IUserTradingAccount>(
 		isFuturesTradingEnabled: { type: Boolean },
 		isSpotTradingEnabled: { type: Boolean },
 		isIpAddressWhitelisted: { type: Boolean },
+		isTestModeEnabled: { type: Boolean },
 		connectionStatus: {
 			type: String,
 			enum: AccountConnectionStatus,

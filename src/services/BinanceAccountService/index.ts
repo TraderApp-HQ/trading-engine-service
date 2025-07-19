@@ -42,7 +42,6 @@ export interface IBinanceFuturesAccountBalances {
 }
 
 class BinanceAccountService extends BaseTradingAccount {
-	private readonly timestamp = Date.now();
 	private readonly recvWindow = 5000;
 
 	constructor(input: ITradingAccountInput) {
@@ -66,9 +65,21 @@ class BinanceAccountService extends BaseTradingAccount {
 			"release-binance-account-test-mode",
 			this.userId
 		);
-		const queryString = `timestamp=${this.timestamp}&recvWindow=${this.recvWindow}`;
+
+		// Generate fresh timestamp for each request
+		const timestamp = Date.now();
+		const queryString = `timestamp=${timestamp}&recvWindow=${this.recvWindow}`;
 		const signature = this.generateSignature(queryString);
 		const headers = this.getHeaders();
+
+		// Add debugging logs
+		console.log("Binance API Request Debug:", {
+			userId: this.userId,
+			isTestModeEnabled,
+			timestamp,
+			apiKeyPreview: this.apiKey ? this.apiKey.substring(0, 8) + "..." : "MISSING",
+			hasApiSecret: !!this.apiSecret,
+		});
 
 		const apiRestrictionsEndpoint = "https://api.binance.com";
 		const spotEndpoint = "https://api.binance.com";
@@ -93,32 +104,55 @@ class BinanceAccountService extends BaseTradingAccount {
 				balance: "0.00000000",
 				availableBalance: "0.00000000",
 			},
-			{
-				asset: Currency.BTC,
-				balance: "0.00000000",
-				availableBalance: "0.00000000",
-			},
+			// {
+			// 	asset: Currency.BTC,
+			// 	balance: "0.00000000",
+			// 	availableBalance: "0.00000000",
+			// },
 		] as IBinanceFuturesAccountBalances[];
 
 		try {
 			const responses = await Promise.allSettled(
-				endpoints.map(async (url) => new this.apiClient(url).get({ options: { headers } }))
+				endpoints.map(async (url) => {
+					try {
+						return await new this.apiClient(url).get({ options: { headers } });
+					} catch (error: any) {
+						// Log detailed error information
+						console.error("Detailed API Error:", {
+							url,
+							status: error.response?.status,
+							statusText: error.response?.statusText,
+							data: error.response?.data,
+							headers: error.response?.headers,
+							message: error.message,
+						});
+						throw error;
+					}
+				})
 			);
 
 			// Handle API restrictions data (skip in test mode)
 			if (!isTestModeEnabled && responses[0].status === "fulfilled") {
 				apiRestrictionsData = responses[0].value as IBinanceApiKeysPermissions;
-				console.log("API Restrictions Data:", apiRestrictionsData);
 			} else if (!isTestModeEnabled && responses[0].status === "rejected") {
 				const error = new Error(`Failed to fetch API Restrictions: ${responses[0].reason}`);
 				console.error("Error in fetching api restrictions", error);
+
+				// Log the detailed error from the rejected promise
+				if (responses[0].reason?.response) {
+					console.error("Binance API Error Details:", {
+						status: responses[0].reason.response.status,
+						data: responses[0].reason.response.data,
+						url: endpoints[0],
+					});
+				}
+
 				throw responses[0].reason;
 			}
 
 			// Handle Spot account data (skip in test mode)
 			if (!isTestModeEnabled && responses[1].status === "fulfilled") {
 				spotAccountData = responses[1].value as IBinanceSpotAccountInfo;
-				console.log("Spot Account Data:", spotAccountData);
 			} else if (!isTestModeEnabled && responses[1].status === "rejected") {
 				const error = new Error(
 					`Failed to fetch Spot Account Data: ${responses[1].reason}`
@@ -135,10 +169,6 @@ class BinanceAccountService extends BaseTradingAccount {
 						IBinanceFuturesAccountBalances[]
 					>
 				).value;
-				console.log("=================== futures account Data ======================", {
-					userId: this.userId,
-					futuresAccountData,
-				});
 			} else {
 				const error = new Error(
 					`Failed to fetch Futures Account Data: ${
@@ -156,22 +186,21 @@ class BinanceAccountService extends BaseTradingAccount {
 							free: "0.00000000",
 							locked: "0.00000000",
 						},
-						{
-							asset: Currency.BTC,
-							free: "0.00000000",
-							locked: "0.00000000",
-						},
+						// {
+						// 	asset: Currency.BTC,
+						// 	free: "0.00000000",
+						// 	locked: "0.00000000",
+						// },
 				  ]
 				: spotAccountData?.balances.filter(
-						(x: { asset: string }) =>
-							x.asset === Currency.BTC || x.asset === Currency.USDT
+						(x: { asset: string }) => x.asset === Currency.USDT
 				  ) || [];
 
 			const futuresAccountBalances = futuresAccountData?.filter(
-				(x: { asset: string }) => x.asset === Currency.BTC || x.asset === Currency.USDT
+				(x: { asset: string }) => x.asset === Currency.USDT
 			);
 
-			return {
+			const accountData = {
 				userId: this.userId,
 				platformName: this.platformName,
 				platformId: 270,
@@ -210,7 +239,22 @@ class BinanceAccountService extends BaseTradingAccount {
 							parseFloat(balance.balance) - parseFloat(balance.availableBalance),
 					})),
 				],
+				isTestModeEnabled,
 			};
+			console.log("=================== accountData ======================", {
+				accountData: {
+					...accountData,
+					apiKey: this.apiKey ? this.apiKey.substring(0, 8) + "..." : "MISSING",
+					apiSecret: this.apiSecret ? this.apiSecret.substring(0, 8) + "..." : "MISSING",
+					accessToken: this.accessToken
+						? this.accessToken.substring(0, 8) + "..."
+						: "MISSING",
+					refreshToken: this.refreshToken
+						? this.refreshToken.substring(0, 8) + "..."
+						: "MISSING",
+				},
+			});
+			return accountData;
 		} catch (error: any) {
 			error.name = ErrorMessage.forbidden;
 			error.message =

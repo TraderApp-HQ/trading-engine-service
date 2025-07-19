@@ -35,6 +35,7 @@ export interface ITradingAccountInfo {
 	category: Category;
 	connectionType: ConnectionType;
 	balances: ITradingAccountBalances[];
+	isTestModeEnabled?: boolean;
 }
 
 export interface ITradingAccount {

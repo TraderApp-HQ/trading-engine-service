@@ -20,7 +20,7 @@ export class QueueService {
 	private readonly queueUrl: string;
 
 	constructor(input: QueueConstructorParams) {
-		this.sqsClient = new SQSClient({ region: input.region });
+		this.sqsClient = new SQSClient({ region: input.region || "eu-west-1" });
 		this.queueUrl = input.queueUrl;
 	}
 
