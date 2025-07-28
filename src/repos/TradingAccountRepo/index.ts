@@ -126,7 +126,11 @@ class TradingAccountRepository {
 
 	private async saveTradingAccountInfoWithBalances(accountData: ITradingAccountInfo) {
 		const tradingAccount = await UserTradingAccount.findOneAndUpdate(
-			{ userId: accountData.userId, platformName: accountData.platformName },
+			{
+				userId: accountData.userId,
+				platformName: accountData.platformName,
+				externalAccountUserId: accountData.externalAccountUserId,
+			},
 			{
 				$set: {
 					...accountData,
@@ -165,6 +169,10 @@ class TradingAccountRepository {
 						accountType: balance.accountType,
 						availableBalance: balance.availableBalance,
 						lockedBalance: balance.lockedBalance,
+						accountSize: this.computeAccountSize(
+							balance.availableBalance,
+							balance.lockedBalance ?? 0
+						),
 					},
 				},
 				{
@@ -236,6 +244,7 @@ class TradingAccountRepository {
 					accountType: balance.accountType,
 					availableBalance: balance.availableBalance,
 					lockedBalance: balance.lockedBalance,
+					accountSize: balance.accountSize,
 				})),
 		}));
 
@@ -261,6 +270,7 @@ class TradingAccountRepository {
 			accountType: balance.accountType,
 			availableBalance: balance.availableBalance,
 			lockedBalance: balance.lockedBalance,
+			accountSize: balance.accountSize,
 		}));
 
 		// Construct the result object
@@ -323,7 +333,8 @@ class TradingAccountRepository {
 		currency,
 	}: IAddFund): Promise<void> {
 		try {
-			await UserTradingAccountBalance.findOneAndUpdate(
+			// Increment the balance
+			const updated = await UserTradingAccountBalance.findOneAndUpdate(
 				{
 					userId,
 					platformName,
@@ -331,14 +342,47 @@ class TradingAccountRepository {
 					currency,
 				},
 				{
-					$set: {
+					$inc: {
 						availableBalance: amount,
 					},
-				}
+				},
+				{ new: true }
 			);
+
+			// If it's a FUTURES account, check and clear the error message if needed
+			if (accountType === AccountType.FUTURES && updated && updated.availableBalance >= 50) {
+				await UserTradingAccount.findOneAndUpdate(
+					{
+						userId,
+						platformName,
+					},
+					{
+						$pull: {
+							// Remove the specific error message from the errorMessages array
+							errorMessages: "Futures trading USDT balance is less than 50 USDT",
+						},
+					}
+				);
+			}
 		} catch (error) {
 			throw new Error("Failed to add fund to trading account");
 		}
+	}
+
+	public computeAccountSize(availableBalance: number, lockedBalance: number) {
+		const totalBalance = availableBalance + (lockedBalance ?? 0);
+
+		const tiers = [
+			100, 200, 300, 500, 750, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 7500, 10000,
+			12500, 15000, 20000, 25000, 30000, 40000, 50000, 60000, 75000, 100000, 125000, 150000,
+			200000, 250000, 300000, 400000, 500000,
+		];
+
+		// Find the smallest tier that accommodates the balance
+		const accountSize = tiers.find((tier) => totalBalance <= tier);
+
+		// Default to 500000 for anything above the highest tier
+		return accountSize || 500000;
 	}
 }
 

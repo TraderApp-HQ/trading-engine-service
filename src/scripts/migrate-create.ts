@@ -5,7 +5,8 @@ const MIGRATIONS_DIR = path.join(__dirname, "migrations");
 
 function createMigrationFile(name: string) {
 	const timestamp = new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15);
-	const migrationFileName = `${timestamp}_${name}.ts`;
+	// Create the migration file name by combining a timestamp, the migration name (spaces replaced with underscores), and the .ts extension.
+	const migrationFileName = `${timestamp}_${name.replace(/\s+/g, "_")}.ts`;
 	const migrationFilePath = path.join(MIGRATIONS_DIR, migrationFileName);
 
 	const migrationTemplate = `

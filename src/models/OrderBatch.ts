@@ -4,7 +4,7 @@ import { OrderBatchStatus, TradingPlatform } from "../config/enums";
 export interface IOrderBatch extends Document {
 	// batchId: string;
 	id: string;
-	orderId: mongoose.Types.ObjectId; // reference to order _id
+	// orderId: mongoose.Types.ObjectId; // reference to order _id
 	baseAsset: string;
 	quoteCurrency: string;
 	baseQuantity: number;
@@ -21,7 +21,7 @@ export interface IOrderBatch extends Document {
 const OrderBatchSchema = new Schema<IOrderBatch>(
 	{
 		// batchId: { type: String, unique: true, required: true },
-		orderId: { type: mongoose.Schema.Types.ObjectId, ref: "order", required: true },
+		// orderId: { type: mongoose.Schema.Types.ObjectId, ref: "order", required: true },
 		baseAsset: { type: String, required: true },
 		baseQuantity: { type: Number, required: true },
 		quoteCurrency: { type: String, required: true },
@@ -57,7 +57,7 @@ OrderBatchSchema.set("toJSON", {
 
 OrderBatchSchema.index({
 	// batchId: 1,
-	orderId: 1,
+	// orderId: 1,
 	tradingAccountId: 1,
 	platformName: 1,
 	platformId: 1,

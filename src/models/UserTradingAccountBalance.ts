@@ -11,6 +11,7 @@ export interface IUserTradingAccountBalance extends Document {
 	availableBalance: number;
 	lockedBalance?: number; // Locked balance (e.g., in open orders)
 	tradingAccountId: mongoose.Types.ObjectId; // reference to the user-trading-account _id
+	accountSize: number;
 }
 
 const UserTradingAccountBalanceSchema = new Schema<IUserTradingAccountBalance>(
@@ -39,6 +40,7 @@ const UserTradingAccountBalanceSchema = new Schema<IUserTradingAccountBalance>(
 		},
 		availableBalance: { type: Number, required: true },
 		lockedBalance: { type: Number, required: true },
+		accountSize: { type: Number },
 	},
 	{ versionKey: false, timestamps: true }
 );
