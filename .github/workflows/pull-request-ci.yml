@@ -39,6 +39,12 @@ jobs:
             - name: Start
               run: npm run start &
 
+            - name: Run DB Migrations
+              run: npm run db:migrate-all
+
+            - name: Run Tests
+              run: npm run test
+
     build-docker-image:
         runs-on: ubuntu-latest
         environment:

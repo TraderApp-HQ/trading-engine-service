@@ -12,6 +12,7 @@ export interface ITradingAccountBalances {
 	accountType: AccountType;
 	availableBalance: number;
 	lockedBalance?: number;
+	accountSize?: number;
 }
 
 export interface ITradingAccountInfo {
