@@ -176,7 +176,7 @@ class BinanceAccountService extends BaseTradingAccount {
 					}`
 				);
 				console.error(error);
-				throw (responses[futuresResponseIndex] as PromiseRejectedResult).reason;
+				// throw (responses[futuresResponseIndex] as PromiseRejectedResult).reason;
 			}
 
 			const spotAccountBalances = isTestModeEnabled
