@@ -163,6 +163,7 @@ class BinanceAccountService extends BaseTradingAccount {
 
 			// Handle Futures account data
 			const futuresResponseIndex = isTestModeEnabled ? 0 : 2;
+			const futuresCallSucceeded = responses[futuresResponseIndex].status === "fulfilled";
 			if (responses[futuresResponseIndex].status === "fulfilled") {
 				futuresAccountData = (
 					responses[futuresResponseIndex] as PromiseFulfilledResult<
@@ -210,10 +211,11 @@ class BinanceAccountService extends BaseTradingAccount {
 				refreshToken: this.refreshToken,
 				category: Category.CRYPTO,
 				connectionType: this.connectionType,
-				// In test mode, set all flags to true except withdrawal
-				isFuturesTradingEnabled: isTestModeEnabled
-					? true
-					: apiRestrictionsData?.enableFutures,
+				isFuturesTradingEnabled: futuresCallSucceeded
+					? isTestModeEnabled
+						? true
+						: apiRestrictionsData?.enableFutures
+					: false,
 				isSpotTradingEnabled: isTestModeEnabled
 					? true
 					: apiRestrictionsData?.enableSpotAndMarginTrading,
