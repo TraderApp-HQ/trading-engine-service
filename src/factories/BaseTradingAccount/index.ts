@@ -1,7 +1,7 @@
 import { Category, ConnectionType, TradingPlatform } from "../../config/enums";
 import { APIClient } from "../../repos/ApiClient";
 import TradingAccountRepository from "../../repos/TradingAccountRepo";
-import { ITradingAccount } from "../interfaces";
+import { ITradingAccount, ITradingAccountInfo } from "../interfaces";
 
 export interface ITradingAccountInput {
 	userId: string;
@@ -46,6 +46,6 @@ export abstract class BaseTradingAccount implements ITradingAccount {
 		this.connectionType = input.connectionType;
 	}
 
-	abstract processTradingAccountInfo(): Promise<void>;
+	abstract processTradingAccountInfo(): Promise<ITradingAccountInfo>;
 	abstract deleteTradingAccount(): Promise<void>;
 }
