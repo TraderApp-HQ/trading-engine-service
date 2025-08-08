@@ -40,6 +40,6 @@ export interface ITradingAccountInfo {
 }
 
 export interface ITradingAccount {
-	processTradingAccountInfo: () => Promise<void>;
+	processTradingAccountInfo: () => Promise<ITradingAccountInfo>;
 	deleteTradingAccount: () => Promise<void>;
 }
