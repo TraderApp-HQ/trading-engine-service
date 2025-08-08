@@ -52,7 +52,7 @@ export const handleTradingAccountManualConnection = async (
 				message: {
 					userId,
 					onboardingChecklistItem: UserOnboardingChecklist.IS_PERSONAL_ATC_FUNDED,
-					value: futuresAccountBalance > 50,
+					value: futuresAccountBalance >= 50,
 				},
 			}),
 		]);
