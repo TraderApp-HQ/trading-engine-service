@@ -89,3 +89,13 @@ export interface UserTradingRule {
 	createdAt: Date;
 	updatedAt: Date;
 }
+
+export interface IPlatformTradingRuleResult {
+	pair: string;
+	baseAsset: string;
+	quoteCurrency: string;
+	minQuantity: number;
+	stepSize?: number;
+	minNotional: number;
+	platform: TradingPlatform;
+}

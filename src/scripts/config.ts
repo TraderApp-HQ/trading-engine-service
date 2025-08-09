@@ -6,7 +6,7 @@ interface ScriptConfig {
 }
 
 export const runScript = ({ scriptFunction }: ScriptConfig): void => {
-	const dbUrl = process.env.MONGO_URI ?? "";
+	const dbUrl = process.env.TRADING_ENGINE_SERVICE_DB_URL ?? "";
 	console.log("db url: ", dbUrl);
 
 	mongoose

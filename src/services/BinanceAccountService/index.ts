@@ -177,7 +177,12 @@ class BinanceAccountService extends BaseTradingAccount {
 					}`
 				);
 				console.error(error);
-				// throw (responses[futuresResponseIndex] as PromiseRejectedResult).reason;
+
+				// throw error in test mode: meaning maybe live api keys are  being used who
+				// plus we are only futures endpoint and fetching all user data (external userId) in test mode, so errors have to be caught and thrown
+				if (isTestModeEnabled) {
+					throw (responses[futuresResponseIndex] as PromiseRejectedResult).reason;
+				}
 			}
 
 			const spotAccountBalances = isTestModeEnabled

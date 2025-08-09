@@ -185,9 +185,14 @@ class TradingAccountRepository {
 	}
 
 	public async archiveTradingAccount({ userId, platformName }: ITradingAccountInput) {
+		// Only archive accounts that are not already archived
 		const promises = [
 			UserTradingAccount.findOneAndUpdate(
-				{ userId, platformName },
+				{
+					userId,
+					platformName,
+					connectionStatus: { $ne: AccountConnectionStatus.ARCHIVED },
+				},
 				{
 					$set: {
 						connectionStatus: AccountConnectionStatus.ARCHIVED,

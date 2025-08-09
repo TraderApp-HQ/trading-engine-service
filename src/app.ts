@@ -6,7 +6,6 @@ import { logger, initSecrets, apiResponseHandler } from "@traderapp/shared-resou
 import { ENVIRONMENTS, ErrorMessage, ResponseType } from "./config/constants";
 import secretsJson from "./env.json";
 import specs from "./utils/swagger";
-// import Redis from "ioredis";
 
 // import routes
 import { OrderRoutes, UserTradingAccountRoutes } from "./routes";
@@ -28,8 +27,9 @@ const secretNames = ["common-secrets", "trading-engine-service-secrets"];
 	});
 
 	const port = process.env.PORT;
-	// const port = 8081;
 	const dbUrl = process.env.TRADING_ENGINE_SERVICE_DB_URL ?? "";
+
+	// const port = 8081;
 	// const dbUrl = "mongodb://localhost:27017/trading-service-db";
 	mongoose
 		.connect(dbUrl)
