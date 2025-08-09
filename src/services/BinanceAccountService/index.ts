@@ -271,11 +271,13 @@ class BinanceAccountService extends BaseTradingAccount {
 		}
 	}
 
-	public async processTradingAccountInfo() {
+	public async processTradingAccountInfo(): Promise<ITradingAccountInfo> {
 		const accountData = (await this.getTradingAccountInfoFromApis()) as ITradingAccountInfo;
 		await this.tradingAccountRepo.processUserTradingAccountInfo(accountData, {
 			isIpAddressWhitelistRequired: true,
 		});
+
+		return accountData;
 	}
 
 	public async deleteTradingAccount() {
