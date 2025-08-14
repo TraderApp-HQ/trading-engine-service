@@ -107,7 +107,7 @@ describe("TradingAccountRepository", () => {
 
 			// Verify feature flag was called
 			expect(mockCheckToggleFlag).toHaveBeenCalledWith(
-				"release-referral-tracking",
+				"release-duplicate-trading-account-connection",
 				"user123"
 			);
 		});

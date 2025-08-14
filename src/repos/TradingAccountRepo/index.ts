@@ -31,7 +31,7 @@ class TradingAccountRepository {
 		const { userId } = input;
 		const featureFlags = new FeatureFlagManager();
 		const isDuplicateAccountAllowed = await featureFlags.checkToggleFlag(
-			"release-referral-tracking",
+			"release-duplicate-trading-account-connection",
 			userId
 		);
 

@@ -232,7 +232,7 @@ export async function validateAddFundToTradingAccountRequest(
 		const userId = req.body.userId as string;
 		const featureFlags = new FeatureFlagManager();
 		const isFeatureFlagOn = await featureFlags.checkToggleFlag(
-			"release-referral-tracking",
+			"release-duplicate-trading-account-connection",
 			userId
 		);
 

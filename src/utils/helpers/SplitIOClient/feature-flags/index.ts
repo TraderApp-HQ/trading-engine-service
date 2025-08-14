@@ -12,17 +12,17 @@ export enum TrafficType {
 /** Add/revise feature flags here, and then fill out the configuration below. */
 export type FeatureFlag =
 	| "release-send-otp"
-	| "release-referral-tracking"
-	| "release-binance-account-test-mode";
+	| "release-binance-account-test-mode"
+	| "release-duplicate-trading-account-connection";
 
 export const FEATURE_FLAG_CONFIG: FeatureFlagConfig = {
 	"release-send-otp": {
 		level: TrafficType.USER,
 	},
-	"release-referral-tracking": {
+	"release-binance-account-test-mode": {
 		level: TrafficType.USER,
 	},
-	"release-binance-account-test-mode": {
+	"release-duplicate-trading-account-connection": {
 		level: TrafficType.USER,
 	},
 };
