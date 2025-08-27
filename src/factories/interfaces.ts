@@ -12,6 +12,7 @@ export interface ITradingAccountBalances {
 	accountType: AccountType;
 	availableBalance: number;
 	lockedBalance?: number;
+	accountSize?: number;
 }
 
 export interface ITradingAccountInfo {
@@ -35,9 +36,10 @@ export interface ITradingAccountInfo {
 	category: Category;
 	connectionType: ConnectionType;
 	balances: ITradingAccountBalances[];
+	isTestModeEnabled?: boolean;
 }
 
 export interface ITradingAccount {
-	processTradingAccountInfo: () => Promise<void>;
+	processTradingAccountInfo: () => Promise<ITradingAccountInfo>;
 	deleteTradingAccount: () => Promise<void>;
 }

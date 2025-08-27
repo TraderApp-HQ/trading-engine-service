@@ -21,7 +21,7 @@ jobs:
             - name: Install Node.js
               uses: actions/setup-node@v2
               with:
-                  node-version: 16.15
+                  node-version: 20.18
 
             - name: Install dependencies
               run: npm install --include=dev --force
@@ -38,6 +38,12 @@ jobs:
 
             - name: Start
               run: npm run start &
+
+            - name: Run DB Migrations
+              run: npm run db:migrate-all
+
+            - name: Run Tests
+              run: npm run test
 
     build-docker-image:
         runs-on: ubuntu-latest

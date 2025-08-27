@@ -7,6 +7,7 @@ import {
 } from "../config/enums";
 
 export interface IUserTradingAccount extends Document {
+	id: string;
 	userId: string;
 	platformName: TradingPlatform;
 	platformId: number; // e.g., 112
@@ -20,6 +21,7 @@ export interface IUserTradingAccount extends Document {
 	isFuturesTradingEnabled: boolean;
 	isSpotTradingEnabled: boolean;
 	isIpAddressWhitelisted?: boolean;
+	isTestModeEnabled?: boolean;
 	connectionStatus: AccountConnectionStatus;
 	errorMessages: string[]; // List of reasons/messages for the unhealthy status
 	category: Category;
@@ -43,6 +45,7 @@ const UserTradingAccountSchema = new Schema<IUserTradingAccount>(
 		isFuturesTradingEnabled: { type: Boolean },
 		isSpotTradingEnabled: { type: Boolean },
 		isIpAddressWhitelisted: { type: Boolean },
+		isTestModeEnabled: { type: Boolean },
 		connectionStatus: {
 			type: String,
 			enum: AccountConnectionStatus,
@@ -60,6 +63,16 @@ const UserTradingAccountSchema = new Schema<IUserTradingAccount>(
 	},
 	{ versionKey: false, timestamps: true }
 );
+
+// Override the toJSON method to map _id to id
+UserTradingAccountSchema.set("toJSON", {
+	transform: (doc, ret) => {
+		ret.id = ret._id;
+		delete ret._id;
+		delete ret.__v;
+		return ret;
+	},
+});
 
 UserTradingAccountSchema.index({
 	userId: 1,

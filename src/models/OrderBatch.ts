@@ -3,7 +3,8 @@ import { OrderBatchStatus, TradingPlatform } from "../config/enums";
 
 export interface IOrderBatch extends Document {
 	// batchId: string;
-	orderId: mongoose.Types.ObjectId; // reference to order _id
+	id: string;
+	// orderId: mongoose.Types.ObjectId; // reference to order _id
 	baseAsset: string;
 	quoteCurrency: string;
 	baseQuantity: number;
@@ -13,14 +14,14 @@ export interface IOrderBatch extends Document {
 	platformName: TradingPlatform;
 	platformId: number;
 	// avgBuyPrice: number;
-	// createdAt: Date;
-	// updatedAt: Date;
+	// createdAt: string;
+	// updatedAt: string;
 }
 
 const OrderBatchSchema = new Schema<IOrderBatch>(
 	{
 		// batchId: { type: String, unique: true, required: true },
-		orderId: { type: mongoose.Schema.Types.ObjectId, ref: "order", required: true },
+		// orderId: { type: mongoose.Schema.Types.ObjectId, ref: "order", required: true },
 		baseAsset: { type: String, required: true },
 		baseQuantity: { type: Number, required: true },
 		quoteCurrency: { type: String, required: true },
@@ -44,9 +45,19 @@ const OrderBatchSchema = new Schema<IOrderBatch>(
 	{ versionKey: false, timestamps: true }
 );
 
+// Override the toJSON method to map _id to id
+OrderBatchSchema.set("toJSON", {
+	transform: (doc, ret) => {
+		ret.id = ret._id;
+		delete ret._id;
+		delete ret.__v;
+		return ret;
+	},
+});
+
 OrderBatchSchema.index({
 	// batchId: 1,
-	orderId: 1,
+	// orderId: 1,
 	tradingAccountId: 1,
 	platformName: 1,
 	platformId: 1,

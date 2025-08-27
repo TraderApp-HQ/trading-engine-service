@@ -6,7 +6,6 @@ import { logger, initSecrets, apiResponseHandler } from "@traderapp/shared-resou
 import { ENVIRONMENTS, ErrorMessage, ResponseType } from "./config/constants";
 import secretsJson from "./env.json";
 import specs from "./utils/swagger";
-// import Redis from "ioredis";
 
 // import routes
 import { OrderRoutes, UserTradingAccountRoutes } from "./routes";
@@ -28,8 +27,9 @@ const secretNames = ["common-secrets", "trading-engine-service-secrets"];
 	});
 
 	const port = process.env.PORT;
-	// const port = 8081;
 	const dbUrl = process.env.TRADING_ENGINE_SERVICE_DB_URL ?? "";
+
+	// const port = 8081;
 	// const dbUrl = "mongodb://localhost:27017/trading-service-db";
 	mongoose
 		.connect(dbUrl)
@@ -130,26 +130,6 @@ function startServer() {
 			})
 		);
 	});
-
-	// const redis = new Redis({
-	// 	host: process.env.REDIS_URL,
-	// 	port: Number(process.env.REDIS_PORT),
-	// });
-
-	// // Example usage
-	// async function run() {
-	// 	try {
-	// 		await redis.set("key", "value of something I put in redis cluster");
-	// 		const result = await redis.get("key");
-	// 		console.log(result); // Outputs: value
-	// 	} catch (error) {
-	// 		console.error("Redis error:", error);
-	// 	} finally {
-	// 		redis.disconnect();
-	// 	}
-	// }
-
-	// run();
 }
 
 export { app };
