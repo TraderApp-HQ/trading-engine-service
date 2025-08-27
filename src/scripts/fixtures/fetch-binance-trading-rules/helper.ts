@@ -71,7 +71,7 @@ export async function fetchBinanceFuturesSymbolRules(): Promise<IPlatformTrading
 	const res = await fetch("https://fapi.binance.com/fapi/v1/exchangeInfo");
 	const data = await res.json();
 
-	const usdtSymbols = data.symbols.filter(
+	const usdtSymbols = data.symbols?.filter(
 		(s: any) => s.contractType === "PERPETUAL" && s.quoteAsset === "USDT"
 	);
 
