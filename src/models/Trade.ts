@@ -20,32 +20,10 @@ export interface ITrade extends Document {
 	updatedAt: Date;
 }
 
-export interface IMasterTrade extends Document {
-	id: string;
-	signalId: string;
-	baseAsset: string;
-	quoteCurrency: string;
-	baseQuantity: number;
-	quoteTotal: number;
-	entryPrice: number;
-	stopLossPrice: number;
-	takeProfitPrice?: number;
-	ordersTriggerPrice: number;
-	targetOrdersAmountToFill: number;
-	chartUrl: string;
-	tradeNote: string;
-	pair: string;
-	side: TradeSide;
-	pnl: number;
-	status: TradeStatus;
-	createdAt: string;
-	updatedAt: string;
-}
-
 const TradeSchema = new Schema<ITrade>(
 	{
 		userId: { type: String, required: true },
-		masterTradeId: { type: String, required: true },
+		masterTradeId: { type: String, required: true, ref: "master-trade" },
 		baseAsset: { type: String, required: true },
 		baseQuantity: { type: Number, required: true },
 		entryPrice: { type: Number, required: true },

@@ -71,4 +71,4 @@ MasterTradeSchema.index({
 	pnl: 1,
 });
 
-export const MasterTrade = mongoose.model<IMasterTrade>("trade", MasterTradeSchema);
+export const MasterTrade = mongoose.model<IMasterTrade>("master-trade", MasterTradeSchema);
