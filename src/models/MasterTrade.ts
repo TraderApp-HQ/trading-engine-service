@@ -1,17 +1,20 @@
 import mongoose, { Schema, Document } from "mongoose";
 import { TradeSide, TradeStatus } from "../config/enums";
 
-export interface ITrade extends Document {
+export interface IMasterTrade extends Document {
 	id: string;
-	userId: string;
-	masterTradeId: string;
+	signalId?: string;
 	baseAsset: string;
 	quoteCurrency: string;
 	baseQuantity: number;
 	quoteTotal: number;
 	entryPrice: number;
 	stopLossPrice: number;
-	takeProfitPrice: number;
+	takeProfitPrice?: number;
+	ordersTriggerPrice: number;
+	targetOrdersAmountToFill: number;
+	chartUrl?: string;
+	tradeNote?: string;
 	pair: string;
 	side: TradeSide;
 	pnl: number;
@@ -20,27 +23,34 @@ export interface ITrade extends Document {
 	updatedAt: Date;
 }
 
-const TradeSchema = new Schema<ITrade>(
+const MasterTradeSchema = new Schema<IMasterTrade>(
 	{
-		userId: { type: String, required: true },
-		masterTradeId: { type: String, required: true, ref: "master-trade" },
+		signalId: { type: String },
 		baseAsset: { type: String, required: true },
 		baseQuantity: { type: Number, required: true },
 		entryPrice: { type: Number, required: true },
 		stopLossPrice: { type: Number, required: true },
 		takeProfitPrice: { type: Number },
+		ordersTriggerPrice: { type: Number, required: true },
+		targetOrdersAmountToFill: { type: Number, required: true },
+		chartUrl: { type: String },
+		tradeNote: { type: String },
 		quoteCurrency: { type: String, required: true },
 		quoteTotal: { type: Number, required: true },
 		pair: { type: String, required: true },
 		side: { type: String, enum: Object.values(TradeSide), required: true },
 		pnl: { type: Number, default: 0 },
-		status: { type: String, enum: Object.values(TradeStatus), required: true },
+		status: {
+			type: String,
+			enum: Object.values(TradeStatus),
+			default: TradeStatus.PENDING,
+		},
 	},
 	{ versionKey: false, timestamps: true }
 );
 
 // Override the toJSON method to map _id to id
-TradeSchema.set("toJSON", {
+MasterTradeSchema.set("toJSON", {
 	transform: (doc, ret) => {
 		ret.id = ret._id;
 		delete ret._id;
@@ -49,7 +59,7 @@ TradeSchema.set("toJSON", {
 	},
 });
 
-TradeSchema.index({
+MasterTradeSchema.index({
 	userId: 1,
 	signalId: 1,
 	baseAsset: 1,
@@ -59,7 +69,6 @@ TradeSchema.index({
 	status: 1,
 	createdAt: 1,
 	pnl: 1,
-	masterTradeId: 1,
 });
 
-export const Trade = mongoose.model<ITrade>("trade", TradeSchema);
+export const MasterTrade = mongoose.model<IMasterTrade>("master-trade", MasterTradeSchema);
