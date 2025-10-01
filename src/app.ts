@@ -8,7 +8,7 @@ import secretsJson from "./env.json";
 import specs from "./utils/swagger";
 
 // import routes
-import { OrderRoutes, UserTradingAccountRoutes } from "./routes";
+import { OrderRoutes, UserTradingAccountRoutes, TradeRoutes } from "./routes";
 import mongoose from "mongoose";
 
 config();
@@ -26,10 +26,10 @@ const secretNames = ["common-secrets", "trading-engine-service-secrets"];
 		secretsJson,
 	});
 
-	const port = process.env.PORT;
+	// const port = process.env.PORT;
 	const dbUrl = process.env.TRADING_ENGINE_SERVICE_DB_URL ?? "";
 
-	// const port = 8081;
+	const port = 8081;
 	// const dbUrl = "mongodb://localhost:27017/trading-service-db";
 	mongoose
 		.connect(dbUrl)
@@ -95,6 +95,7 @@ function startServer() {
 	// api routes
 	app.use(`/orders`, OrderRoutes);
 	app.use(`/account`, UserTradingAccountRoutes);
+	app.use(`/trade`, TradeRoutes);
 
 	// health check
 	app.get("/ping", (_req, res) => {

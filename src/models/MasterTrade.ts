@@ -5,12 +5,14 @@ export interface IMasterTrade extends Document {
 	id: string;
 	signalId?: string;
 	baseAsset: string;
+	baseAssetLogoUrl: string;
 	quoteCurrency: string;
 	baseQuantity: number;
 	quoteTotal: number;
+	currentPrice: number;
 	entryPrice: number;
 	stopLossPrice: number;
-	takeProfitPrice?: number;
+	takeProfitPrice: number;
 	ordersTriggerPrice: number;
 	targetOrdersAmountToFill: number;
 	chartUrl?: string;
@@ -18,16 +20,22 @@ export interface IMasterTrade extends Document {
 	pair: string;
 	side: TradeSide;
 	pnl: number;
+	pnlPercentage: number;
 	status: TradeStatus;
 	createdAt: Date;
 	updatedAt: Date;
 }
 
+export interface ICreateMasterTrade
+	extends Omit<IMasterTrade, "id" | "createdAt" | "updatedAt" | keyof Document> {}
+
 const MasterTradeSchema = new Schema<IMasterTrade>(
 	{
 		signalId: { type: String },
 		baseAsset: { type: String, required: true },
+		baseAssetLogoUrl: { type: String, required: true },
 		baseQuantity: { type: Number, required: true },
+		currentPrice: { type: Number, required: true },
 		entryPrice: { type: Number, required: true },
 		stopLossPrice: { type: Number, required: true },
 		takeProfitPrice: { type: Number },
@@ -40,6 +48,7 @@ const MasterTradeSchema = new Schema<IMasterTrade>(
 		pair: { type: String, required: true },
 		side: { type: String, enum: Object.values(TradeSide), required: true },
 		pnl: { type: Number, default: 0 },
+		pnlPercentage: { type: Number, default: 0 },
 		status: {
 			type: String,
 			enum: Object.values(TradeStatus),
