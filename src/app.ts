@@ -8,7 +8,7 @@ import secretsJson from "./env.json";
 import specs from "./utils/swagger";
 
 // import routes
-import { OrderRoutes, UserTradingAccountRoutes } from "./routes";
+import { OrderRoutes, UserTradingAccountRoutes, TradeRoutes } from "./routes";
 import mongoose from "mongoose";
 
 config();
@@ -95,6 +95,7 @@ function startServer() {
 	// api routes
 	app.use(`/orders`, OrderRoutes);
 	app.use(`/account`, UserTradingAccountRoutes);
+	app.use(`/trade`, TradeRoutes);
 
 	// health check
 	app.get("/ping", (_req, res) => {
