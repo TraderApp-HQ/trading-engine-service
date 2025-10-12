@@ -12,7 +12,7 @@ export interface IMasterTrade extends Document {
 	currentPrice: number;
 	entryPrice: number;
 	stopLossPrice: number;
-	takeProfitPrice: number;
+	takeProfitPrice?: number;
 	ordersTriggerPrice: number;
 	targetOrdersAmountToFill: number;
 	chartUrl?: string;

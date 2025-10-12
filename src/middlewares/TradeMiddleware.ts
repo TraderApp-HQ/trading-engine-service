@@ -30,7 +30,7 @@ export async function validateCreateTradeRequest(req: Request, res: Response, ne
 			currentPrice: Joi.number().required().label("Current Price"),
 			entryPrice: Joi.number().required().label("Entry price"),
 			stopLossPrice: Joi.number().required().label("Stop Loss Price"),
-			takeProfitPrice: Joi.number().required().label("Take Profit Price"),
+			takeProfitPrice: Joi.number().optional().label("Take Profit Price"),
 			ordersTriggerPrice: Joi.number().required().label("Orders Trigger Price"),
 			targetOrdersAmountToFill: Joi.number().required().label("Target orders amount to fill"),
 			chartUrl: Joi.string().label("Chart url"),
