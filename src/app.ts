@@ -17,7 +17,7 @@ const app: Application = express();
 
 const env = process.env.NODE_ENV || "development";
 const suffix = ENVIRONMENTS[env] || "dev";
-const secretNames = ["common-secrets", "trading-engine-service-secrets"];
+const secretNames = ["common-secrets", "trading-engine-service-secrets", "assets-service-secrets"];
 
 (async function () {
 	await initSecrets({
