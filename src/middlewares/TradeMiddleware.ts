@@ -1,7 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 import { checkAdmin, checkUser } from "../utils/tokens";
 import Joi from "joi";
-import { TradeSide, TradeStatus } from "../config/enums";
+import {
+	CandleStick,
+	Category,
+	TradeRisk,
+	TradeSide,
+	TradeStatus,
+	TradingPlatform,
+} from "../config/enums";
 
 export async function validateGetTradesRequest(req: Request, res: Response, next: NextFunction) {
 	try {
@@ -21,31 +28,54 @@ export async function validateCreateTradeRequest(req: Request, res: Response, ne
 
 		// Joi schema to validate request body
 		const masterTradeSchema = Joi.object({
-			signalId: Joi.string().label("Signal ID"),
+			signalId: Joi.string().optional().label("Signal ID"),
 			baseAsset: Joi.string().required().label("Base Asset"),
 			baseAssetLogoUrl: Joi.string().required().label("Base Asset Logo Url"),
-			quoteCurrency: Joi.string().required().label("Quote Currency"),
 			baseQuantity: Joi.number().required().label("Base Quantity"),
-			quoteTotal: Joi.number().required().label("Quote Total"),
 			currentPrice: Joi.number().required().label("Current Price"),
 			entryPrice: Joi.number().required().label("Entry price"),
 			stopLossPrice: Joi.number().required().label("Stop Loss Price"),
 			takeProfitPrice: Joi.number().optional().label("Take Profit Price"),
 			ordersTriggerPrice: Joi.number().required().label("Orders Trigger Price"),
 			targetOrdersAmountToFill: Joi.number().required().label("Target orders amount to fill"),
-			chartUrl: Joi.string().label("Chart url"),
+			chartUrl: Joi.string().required().label("Chart url"),
 			tradeNote: Joi.string().label("Trade note"),
+			quoteCurrency: Joi.string().required().label("Quote Currency"),
+			quoteTotal: Joi.number().required().label("Quote Total"),
 			pair: Joi.string().required().label("Trade note"),
 			side: Joi.string()
 				.valid(...Object.values(TradeSide))
 				.required()
 				.label("Trade side"),
-			pnl: Joi.number().required().label("PnL"),
-			pnlPercentage: Joi.number().required().label("PnL Percentage"),
+			estimatedProfit: Joi.number().required().label("Estimated profit value"),
+			estimatedLoss: Joi.number().required().label("Estimated loss value"),
 			status: Joi.string()
 				.valid(...Object.values(TradeStatus))
 				.required()
 				.label("Trade status"),
+			orderPlacementType: Joi.string().required().label("Order placement type"),
+			accountType: Joi.string().required().label("Account type"),
+			supportedTradingPlatforms: Joi.array()
+				.items(
+					Joi.string()
+						.valid(...Object.values(TradingPlatform))
+						.required()
+				)
+				.min(1)
+				.required()
+				.label("Supported trading platforms"),
+			candlestick: Joi.string()
+				.valid(...Object.values(CandleStick))
+				.required()
+				.label("Candlestick"),
+			risk: Joi.string()
+				.valid(...Object.values(TradeRisk))
+				.required()
+				.label("Risk"),
+			category: Joi.string()
+				.valid(...Object.values(Category))
+				.required()
+				.label("Category"),
 		});
 
 		const { error } = masterTradeSchema.validate(req.body);

@@ -4,6 +4,8 @@ import { apiResponseHandler } from "@traderapp/shared-resources";
 import { ResponseType } from "../config/constants";
 import { TradeService } from "../services/TradeService";
 import { ICreateMasterTrade } from "../models/MasterTrade";
+import { deleteFile, uploadFile } from "../utils/s3FileService";
+import { v4 as uuidv4 } from "uuid";
 
 export async function getTradesHandler(req: Request, res: Response, next: NextFunction) {
 	const tradeService = new TradeService();
@@ -23,7 +25,20 @@ export async function getTradesHandler(req: Request, res: Response, next: NextFu
 
 export async function createTradesHandler(req: Request, res: Response, next: NextFunction) {
 	const tradeService = new TradeService();
+
+	let uploadedChartUrl: string | boolean = false;
+	// generate id for chart upload
+	const id = uuidv4();
 	try {
+		// get file from base64 string
+		const chartUrl = req.body?.chartUrl as string;
+		const file = Buffer.from(chartUrl, "base64");
+
+		// Upload chart image to s3 storage
+		uploadedChartUrl = await uploadFile(file, id);
+
+		if (!uploadedChartUrl) throw new Error("Chart image failed to upload");
+
 		const newTrade: ICreateMasterTrade = {
 			signalId: req.body?.signalId,
 			baseAsset: req.body.baseAsset,
@@ -37,13 +52,19 @@ export async function createTradesHandler(req: Request, res: Response, next: Nex
 			takeProfitPrice: req.body.takeProfitPrice,
 			ordersTriggerPrice: req.body.ordersTriggerPrice,
 			targetOrdersAmountToFill: req.body.targetOrdersAmountToFill,
-			chartUrl: req.body.chartUrl,
+			chartUrl: uploadedChartUrl,
 			tradeNote: req.body.tradeNote,
 			pair: req.body.pair,
-			side: req.body.tradeSide,
-			pnl: req.body.pnl,
-			pnlPercentage: req.body.pnlPercentage,
+			side: req.body.side,
 			status: req.body.status,
+			estimatedLoss: req.body.estimatedLoss,
+			estimatedProfit: req.body.estimatedProfit,
+			accountType: req.body.accountType,
+			orderPlacementType: req.body.orderPlacementType,
+			supportedTradingPlatforms: req.body.supportedTradingPlatforms,
+			candlestick: req.body.candlestick,
+			risk: req.body.risk,
+			category: req.body.category,
 		};
 
 		const activeTrades = await tradeService.createTrade(newTrade);
@@ -56,6 +77,11 @@ export async function createTradesHandler(req: Request, res: Response, next: Nex
 			})
 		);
 	} catch (error) {
+		// delete uploaded chart image if it was uploaded
+		if (uploadedChartUrl) {
+			await deleteFile(id);
+		}
+
 		next(error);
 	}
 }
