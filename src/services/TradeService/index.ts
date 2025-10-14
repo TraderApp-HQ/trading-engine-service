@@ -3,7 +3,9 @@ import { ICreateMasterTrade, IMasterTrade, MasterTrade } from "../../models/Mast
 
 export class TradeService {
 	public async getActiveTrades(): Promise<IMasterTrade[]> {
-		const activeTrades = await MasterTrade.find({ status: { $ne: TradeStatus.CLOSED } });
+		const activeTrades = await MasterTrade.find({ status: { $ne: TradeStatus.CLOSED } }).sort(
+			"-createdAt"
+		);
 
 		return activeTrades;
 	}
