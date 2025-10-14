@@ -7,8 +7,11 @@ import { AccountType, ConnectionType, Currency, TradingPlatform } from "../confi
 import TradingAccountFactory from "../factories/TradingAccountFactory";
 import TradingAccountRepository from "../repos/TradingAccountRepo";
 import { IAddFund } from "../config/interfaces";
-import { publishMessageToQueue } from "../utils/helpers/SQSClient/helpers";
-import { UserOnboardingChecklist } from "../utils/helpers/types";
+import { publishMessageToQueue } from "../clients/SQSClient/helpers";
+import {
+	ITrackUserOnboardingChecklistInput,
+	UserOnboardingChecklist,
+} from "../utils/helpers/types";
 
 export const handleTradingAccountManualConnection = async (
 	req: Request,
@@ -39,21 +42,23 @@ export const handleTradingAccountManualConnection = async (
 			.reduce((acc, bal) => acc + (bal.availableBalance ?? 0), 0);
 
 		// Publish user task status to queue
+		const accountConnectedMessage: ITrackUserOnboardingChecklistInput = {
+			userId,
+			onboardingChecklistItem: UserOnboardingChecklist.IS_TRADING_ACCOUNT_CONNECTED,
+		};
+		const personalATCFundedMessage: ITrackUserOnboardingChecklistInput = {
+			userId,
+			onboardingChecklistItem: UserOnboardingChecklist.IS_PERSONAL_ATC_FUNDED,
+			value: futuresAccountBalance >= 50,
+		};
 		await Promise.all([
 			publishMessageToQueue({
 				queueUrl: process.env.TRACK_USER_ONBOARDING_CHECKLIST_QUEUE ?? "",
-				message: {
-					userId,
-					onboardingChecklistItem: UserOnboardingChecklist.IS_TRADING_ACCOUNT_CONNECTED,
-				},
+				message: JSON.stringify(accountConnectedMessage),
 			}),
 			publishMessageToQueue({
 				queueUrl: process.env.TRACK_USER_ONBOARDING_CHECKLIST_QUEUE ?? "",
-				message: {
-					userId,
-					onboardingChecklistItem: UserOnboardingChecklist.IS_PERSONAL_ATC_FUNDED,
-					value: futuresAccountBalance >= 50,
-				},
+				message: JSON.stringify(personalATCFundedMessage),
 			}),
 		]);
 

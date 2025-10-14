@@ -3,7 +3,7 @@ import { checkAdmin, checkUser } from "../utils/tokens";
 import Joi from "joi";
 import { AccountType, Category, ConnectionType, Currency, TradingPlatform } from "../config/enums";
 import TradingAccountRepository from "../repos/TradingAccountRepo";
-import { FeatureFlagManager } from "../utils/helpers/SplitIOClient";
+import { FeatureFlagManager } from "../clients/SplitIOClient";
 import { ErrorMessage } from "../config/constants";
 
 export async function validateTradingAccountManualConnectionRequest(

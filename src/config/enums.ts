@@ -38,6 +38,12 @@ export enum UserRoles {
 }
 
 export enum OrderType {
+	ENTRY = "ENTRY",
+	TAKE_PROFIT = "TAKE_PROFIT",
+	STOP_LOSS = "STOP_LOSS",
+}
+
+export enum OrderSide {
 	BUY = "BUY",
 	SELL = "SELL",
 }
@@ -59,6 +65,9 @@ export enum TradeStatus {
 	ACTIVE = "ACTIVE",
 	CLOSED = "CLOSED",
 	PENDING = "PENDING",
+	PROCESSED = "PROCESSED",
+	FAILED = "FAILED",
+	CANCELED = "CANCELED",
 }
 
 export enum OrderBatchStatus {

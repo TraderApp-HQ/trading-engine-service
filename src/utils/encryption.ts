@@ -7,8 +7,8 @@ export const encrypt = (text: string) => {
 	const iv = crypto.randomBytes(IV_LENGTH); // Generate a random initialization vector
 	const cipher = crypto.createCipheriv(
 		"aes-256-cbc",
-		Buffer.from(process.env.API_SECRET_KEY_ENCRYPTION_KEY ?? ""),
-		iv
+		Buffer.from(process.env.API_SECRET_KEY_ENCRYPTION_KEY ?? "") as crypto.CipherKey,
+		iv as crypto.BinaryLike
 	);
 	let encrypted = cipher.update(text, "utf8", "hex");
 	encrypted += cipher.final("hex");
@@ -22,10 +22,14 @@ export const decrypt = (encrypted: string) => {
 	const encryptedText = Buffer.from(textParts[1], "hex");
 	const decipher = crypto.createDecipheriv(
 		"aes-256-cbc",
-		Buffer.from(process.env.API_SECRET_KEY_ENCRYPTION_KEY ?? ""),
-		iv
+		Buffer.from(process.env.API_SECRET_KEY_ENCRYPTION_KEY ?? "") as crypto.CipherKey,
+		iv as crypto.BinaryLike
 	);
-	let decrypted = decipher.update(encryptedText, undefined, "utf8");
+	let decrypted: string = decipher.update(
+		encryptedText as NodeJS.ArrayBufferView,
+		undefined,
+		"utf8"
+	);
 	decrypted += decipher.final("utf8");
 	return decrypted;
 };

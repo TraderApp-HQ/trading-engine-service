@@ -5,7 +5,7 @@ import { AccountType, Category, Currency } from "../../config/enums";
 import { BaseTradingAccount, ITradingAccountInput } from "../../factories/BaseTradingAccount";
 import { ITradingAccountInfo } from "../../factories/interfaces";
 import { ErrorMessage } from "../../config/constants";
-import { FeatureFlagManager } from "../../utils/helpers/SplitIOClient";
+import { FeatureFlagManager } from "../../clients/SplitIOClient";
 
 export interface IBinanceSpotAccountInfo {
 	uid: number;

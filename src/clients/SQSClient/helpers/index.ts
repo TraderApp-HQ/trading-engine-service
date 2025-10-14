@@ -1,11 +1,10 @@
 import "dotenv/config";
 import { QueueService } from "..";
 import { logger } from "@traderapp/shared-resources";
-import { ITrackUserOnboardingChecklistInput } from "../../types";
 
 interface QueueInput {
 	queueUrl: string;
-	message: string | object | ITrackUserOnboardingChecklistInput;
+	message: string;
 	awsRegion?: string;
 }
 

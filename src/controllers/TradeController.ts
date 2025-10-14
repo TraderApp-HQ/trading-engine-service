@@ -8,12 +8,11 @@ import { ICreateMasterTrade } from "../models/MasterTrade";
 export async function getTradesHandler(req: Request, res: Response, next: NextFunction) {
 	const tradeService = new TradeService();
 	try {
-		const activeTrades = await tradeService.getActiveTrades();
-
+		const activeMasterTrades = await tradeService.getActiveMasterTrades();
 		res.status(HttpStatus.OK).json(
 			apiResponseHandler({
 				type: ResponseType.SUCCESS,
-				object: activeTrades,
+				object: activeMasterTrades,
 			})
 		);
 	} catch (error) {
@@ -44,6 +43,9 @@ export async function createTradesHandler(req: Request, res: Response, next: Nex
 			pnl: req.body.pnl,
 			pnlPercentage: req.body.pnlPercentage,
 			status: req.body.status,
+			supportedTradingPlatforms: req.body.supportedTradingPlatforms,
+			estimatedProfit: req.body.estimatedProfit,
+			estimatedLoss: req.body.estimatedLoss,
 		};
 
 		const activeTrades = await tradeService.createTrade(newTrade);

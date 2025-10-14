@@ -10,6 +10,7 @@ import specs from "./utils/swagger";
 // import routes
 import { OrderRoutes, UserTradingAccountRoutes, TradeRoutes } from "./routes";
 import mongoose from "mongoose";
+import runAllJobs from "./jobs";
 
 config();
 
@@ -101,6 +102,9 @@ function startServer() {
 	app.get("/ping", (_req, res) => {
 		res.status(200).send({ message: `pong!!! Trading engine service ${env} server running!` });
 	});
+
+	// run all jobs
+	runAllJobs();
 
 	// handle errors
 	app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
