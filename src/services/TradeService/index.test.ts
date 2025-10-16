@@ -1,11 +1,14 @@
 import { TradeService } from "./index";
-import { ICreateMasterTrade, MasterTrade } from "../../models/MasterTrade";
+import { ICreateMasterTrade, IMasterTrade, MasterTrade } from "../../models/MasterTrade";
 import {
 	TradeStatus,
 	TradeSide,
 	TradingPlatform,
 	AccountType,
 	OrderPlacementType,
+	Category,
+	TradeRisk,
+	CandleStick,
 } from "../../config/enums";
 import { IOHLCData } from "../../clients/BinanceFuturesClient";
 
@@ -47,6 +50,9 @@ describe("TradeService", () => {
 					side: TradeSide.LONG,
 					status: TradeStatus.ACTIVE,
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
+					candlestick: CandleStick.fifteenMin,
+					risk: TradeRisk.low,
+					category: Category.CRYPTO,
 				},
 				{
 					baseAsset: "ETH",
@@ -64,6 +70,9 @@ describe("TradeService", () => {
 					side: TradeSide.LONG,
 					status: TradeStatus.PENDING,
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
+					candlestick: CandleStick.fifteenMin,
+					risk: TradeRisk.low,
+					category: Category.CRYPTO,
 				},
 				{
 					baseAsset: "BNB",
@@ -81,6 +90,9 @@ describe("TradeService", () => {
 					side: TradeSide.SHORT,
 					status: TradeStatus.CLOSED,
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
+					candlestick: CandleStick.fifteenMin,
+					risk: TradeRisk.low,
+					category: Category.CRYPTO,
 				},
 			]);
 
@@ -118,6 +130,9 @@ describe("TradeService", () => {
 				supportedTradingPlatforms: [TradingPlatform.BINANCE],
 				estimatedProfit: 0,
 				estimatedLoss: 0,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
 			};
 
 			const createdTrade = await tradeService.createTrade(newTrade);
@@ -160,6 +175,9 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					candlestick: CandleStick.fifteenMin,
+					risk: TradeRisk.low,
+					category: Category.CRYPTO,
 				});
 
 				const ohlcData: IOHLCData[] = [
@@ -204,6 +222,9 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					candlestick: CandleStick.fifteenMin,
+					risk: TradeRisk.low,
+					category: Category.CRYPTO,
 				});
 
 				const ohlcData: IOHLCData[] = [
@@ -248,6 +269,9 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					candlestick: CandleStick.fifteenMin,
+					risk: TradeRisk.low,
+					category: Category.CRYPTO,
 				});
 
 				const ohlcData: IOHLCData[] = [
@@ -292,6 +316,9 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					candlestick: CandleStick.fifteenMin,
+					risk: TradeRisk.low,
+					category: Category.CRYPTO,
 				});
 
 				const ohlcData: IOHLCData[] = [
@@ -323,7 +350,7 @@ describe("TradeService", () => {
 				process.env.PROCESS_INCOMING_MASTER_TRADES_QUEUE = "test-queue-url";
 			});
 
-			it("should activate LONG trade when low price reaches trigger", async () => {
+			it("should process LONG trade when low price reaches trigger", async () => {
 				const trade = await MasterTrade.create({
 					baseAsset: "BTC",
 					baseAssetLogoUrl: "logo.png",
@@ -344,6 +371,9 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					candlestick: CandleStick.fifteenMin,
+					risk: TradeRisk.low,
+					category: Category.CRYPTO,
 				});
 
 				const ohlcData: IOHLCData[] = [
@@ -362,7 +392,7 @@ describe("TradeService", () => {
 				await tradeService.processMasterTradesWithCandles(ohlcData, [trade]);
 
 				const updatedTrade = await MasterTrade.findById(trade._id);
-				expect(updatedTrade?.status).toBe(TradeStatus.ACTIVE);
+				expect(updatedTrade?.status).toBe(TradeStatus.PROCESSED);
 				expect(updatedTrade?.pnl).toBe(0);
 				expect(updatedTrade?.pnlPercentage).toBe(0);
 				expect(updatedTrade?.currentPrice).toBe(59800);
@@ -374,7 +404,7 @@ describe("TradeService", () => {
 				});
 			});
 
-			it("should activate SHORT trade when high price reaches trigger", async () => {
+			it("should process SHORT trade when high price reaches trigger", async () => {
 				const trade = await MasterTrade.create({
 					baseAsset: "BTC",
 					baseAssetLogoUrl: "logo.png",
@@ -395,6 +425,9 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					candlestick: CandleStick.fifteenMin,
+					risk: TradeRisk.low,
+					category: Category.CRYPTO,
 				});
 
 				const ohlcData: IOHLCData[] = [
@@ -413,7 +446,7 @@ describe("TradeService", () => {
 				await tradeService.processMasterTradesWithCandles(ohlcData, [trade]);
 
 				const updatedTrade = await MasterTrade.findById(trade._id);
-				expect(updatedTrade?.status).toBe(TradeStatus.ACTIVE);
+				expect(updatedTrade?.status).toBe(TradeStatus.PROCESSED);
 				expect(updatedTrade?.currentPrice).toBe(60200);
 
 				expect(mockPublishMessageToQueue).toHaveBeenCalledTimes(1);
@@ -438,6 +471,9 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					candlestick: CandleStick.fifteenMin,
+					risk: TradeRisk.low,
+					category: Category.CRYPTO,
 				});
 
 				const ohlcData: IOHLCData[] = [
@@ -479,6 +515,9 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					candlestick: CandleStick.fifteenMin,
+					risk: TradeRisk.low,
+					category: Category.CRYPTO,
 				});
 
 				const ohlcData: IOHLCData[] = [
@@ -522,6 +561,9 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					candlestick: CandleStick.fifteenMin,
+					risk: TradeRisk.low,
+					category: Category.CRYPTO,
 				});
 
 				const ohlcData: IOHLCData[] = [
@@ -563,6 +605,9 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					candlestick: CandleStick.fifteenMin,
+					risk: TradeRisk.low,
+					category: Category.CRYPTO,
 				});
 
 				const ethTrade = await MasterTrade.create({
@@ -583,6 +628,9 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					candlestick: CandleStick.fifteenMin,
+					risk: TradeRisk.low,
+					category: Category.CRYPTO,
 				});
 
 				const ohlcData: IOHLCData[] = [
@@ -638,6 +686,265 @@ describe("TradeService", () => {
 					tradeService.processMasterTradesWithCandles(ohlcData, [])
 				).resolves.not.toThrow();
 			});
+		});
+	});
+
+	describe("PROCESSED trades - Entry price activation", () => {
+		it("should activate LONG trade when low price reaches entry price", async () => {
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 59800, // Entry price
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.PROCESSED,
+				orderPlacementType: OrderPlacementType.LIMIT,
+				accountType: AccountType.FUTURES,
+				supportedTradingPlatforms: [TradingPlatform.BINANCE],
+				estimatedProfit: 0,
+				estimatedLoss: 0,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			const ohlcData: IOHLCData[] = [
+				{
+					symbol: "BTCUSDT",
+					open: "60000",
+					high: "60200",
+					low: "59700", // Low reaches entry price (59800)
+					close: "59900",
+					openTime: Date.now(),
+					closeTime: Date.now(),
+					volume: "100",
+				},
+			];
+
+			await tradeService.processMasterTradesWithCandles(ohlcData, [trade]);
+
+			const updatedTrade = await MasterTrade.findById(trade._id);
+			expect(updatedTrade?.status).toBe(TradeStatus.ACTIVE);
+			expect(updatedTrade?.pnl).toBe(0);
+			expect(updatedTrade?.pnlPercentage).toBe(0);
+			expect(updatedTrade?.currentPrice).toBe(59900);
+
+			// Should NOT publish to queue (it's commented out in the implementation)
+			expect(mockPublishMessageToQueue).not.toHaveBeenCalled();
+		});
+
+		it("should activate SHORT trade when high price reaches entry price", async () => {
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 60200, // Entry price
+				stopLossPrice: 62000,
+				takeProfitPrice: 55000,
+				ordersTriggerPrice: 60500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.SHORT,
+				status: TradeStatus.PROCESSED,
+				orderPlacementType: OrderPlacementType.LIMIT,
+				accountType: AccountType.FUTURES,
+				supportedTradingPlatforms: [TradingPlatform.BINANCE],
+				estimatedProfit: 0,
+				estimatedLoss: 0,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			const ohlcData: IOHLCData[] = [
+				{
+					symbol: "BTCUSDT",
+					open: "60000",
+					high: "60300", // High reaches entry price (60200)
+					low: "59800",
+					close: "60100",
+					openTime: Date.now(),
+					closeTime: Date.now(),
+					volume: "100",
+				},
+			];
+
+			await tradeService.processMasterTradesWithCandles(ohlcData, [trade]);
+
+			const updatedTrade = await MasterTrade.findById(trade._id);
+			expect(updatedTrade?.status).toBe(TradeStatus.ACTIVE);
+			expect(updatedTrade?.currentPrice).toBe(60100);
+			expect(updatedTrade?.pnl).toBe(0);
+			expect(updatedTrade?.pnlPercentage).toBe(0);
+
+			expect(mockPublishMessageToQueue).not.toHaveBeenCalled();
+		});
+
+		it("should NOT activate LONG trade when entry price is not reached", async () => {
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 59800, // Entry price
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.PROCESSED,
+				supportedTradingPlatforms: [TradingPlatform.BINANCE],
+				estimatedProfit: 0,
+				estimatedLoss: 0,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			const ohlcData: IOHLCData[] = [
+				{
+					symbol: "BTCUSDT",
+					open: "60000",
+					high: "60500",
+					low: "59900", // Low does NOT reach entry price (59800)
+					close: "60200",
+					openTime: Date.now(),
+					closeTime: Date.now(),
+					volume: "100",
+				},
+			];
+
+			await tradeService.processMasterTradesWithCandles(ohlcData, [trade]);
+
+			const updatedTrade = await MasterTrade.findById(trade._id);
+			expect(updatedTrade?.status).toBe(TradeStatus.PROCESSED);
+			expect(mockPublishMessageToQueue).not.toHaveBeenCalled();
+		});
+
+		it("should NOT activate SHORT trade when entry price is not reached", async () => {
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 60200, // Entry price
+				stopLossPrice: 62000,
+				takeProfitPrice: 55000,
+				ordersTriggerPrice: 60500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.SHORT,
+				status: TradeStatus.PROCESSED,
+				supportedTradingPlatforms: [TradingPlatform.BINANCE],
+				estimatedProfit: 0,
+				estimatedLoss: 0,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			const ohlcData: IOHLCData[] = [
+				{
+					symbol: "BTCUSDT",
+					open: "60000",
+					high: "60100", // High does NOT reach entry price (60200)
+					low: "59800",
+					close: "60000",
+					openTime: Date.now(),
+					closeTime: Date.now(),
+					volume: "100",
+				},
+			];
+
+			await tradeService.processMasterTradesWithCandles(ohlcData, [trade]);
+
+			const updatedTrade = await MasterTrade.findById(trade._id);
+			expect(updatedTrade?.status).toBe(TradeStatus.PROCESSED);
+			expect(mockPublishMessageToQueue).not.toHaveBeenCalled();
+		});
+
+		it("should handle transition from PROCESSED to ACTIVE correctly", async () => {
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.PROCESSED,
+				supportedTradingPlatforms: [TradingPlatform.BINANCE],
+				estimatedProfit: 0,
+				estimatedLoss: 0,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			// First candle - entry price reached, should activate
+			const ohlcData1: IOHLCData[] = [
+				{
+					symbol: "BTCUSDT",
+					open: "60200",
+					high: "60300",
+					low: "59900", // Reaches entry price
+					close: "60100",
+					openTime: Date.now(),
+					closeTime: Date.now(),
+					volume: "100",
+				},
+			];
+
+			await tradeService.processMasterTradesWithCandles(ohlcData1, [trade]);
+
+			let updatedTrade = await MasterTrade.findById(trade._id);
+			expect(updatedTrade?.status).toBe(TradeStatus.ACTIVE);
+
+			// Second candle - now as ACTIVE trade, should calculate PNL
+			const ohlcData2: IOHLCData[] = [
+				{
+					symbol: "BTCUSDT",
+					open: "60100",
+					high: "61000",
+					low: "60000",
+					close: "60600", // 1% gain
+					openTime: Date.now(),
+					closeTime: Date.now(),
+					volume: "100",
+				},
+			];
+
+			await tradeService.processMasterTradesWithCandles(ohlcData2, [
+				updatedTrade as IMasterTrade,
+			]);
+
+			updatedTrade = await MasterTrade.findById(trade._id);
+			expect(updatedTrade?.status).toBe(TradeStatus.ACTIVE);
+			expect(updatedTrade?.currentPrice).toBe(60600);
+			expect(updatedTrade?.pnlPercentage).toBeCloseTo(1, 2);
+			expect(updatedTrade?.pnl).toBeCloseTo(60, 2); // 1% of 6000
 		});
 	});
 });

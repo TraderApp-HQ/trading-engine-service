@@ -1,10 +1,13 @@
 import mongoose, { Schema, Document } from "mongoose";
 import {
-	AccountType,
 	OrderPlacementType,
-	TradeSide,
-	TradeStatus,
 	TradingPlatform,
+	TradeStatus,
+	AccountType,
+	TradeSide,
+	TradeRisk,
+	Category,
+	CandleStick,
 } from "../config/enums";
 
 export interface IMasterTrade extends Document {
@@ -18,7 +21,7 @@ export interface IMasterTrade extends Document {
 	currentPrice: number;
 	entryPrice: number;
 	stopLossPrice: number;
-	takeProfitPrice: number;
+	takeProfitPrice?: number;
 	ordersTriggerPrice: number;
 	targetOrdersAmountToFill: number;
 	orderPlacementType?: OrderPlacementType;
@@ -35,10 +38,16 @@ export interface IMasterTrade extends Document {
 	status: TradeStatus;
 	createdAt: Date;
 	updatedAt: Date;
+	candlestick: CandleStick;
+	risk: TradeRisk;
+	category: Category;
 }
 
 export interface ICreateMasterTrade
-	extends Omit<IMasterTrade, "id" | "createdAt" | "updatedAt" | keyof Document> {}
+	extends Omit<
+		IMasterTrade,
+		"id" | "createdAt" | "updatedAt" | "pnl" | "pnlPercentage" | keyof Document
+	> {}
 
 const MasterTradeSchema = new Schema<IMasterTrade>(
 	{
@@ -82,6 +91,9 @@ const MasterTradeSchema = new Schema<IMasterTrade>(
 			enum: Object.values(TradingPlatform),
 			required: true,
 		},
+		candlestick: { type: String, enum: Object.values(CandleStick), required: true },
+		risk: { type: String, enum: Object.values(TradeRisk), required: true },
+		category: { type: String, enum: Object.values(Category), required: true },
 	},
 	{ versionKey: false, timestamps: true }
 );

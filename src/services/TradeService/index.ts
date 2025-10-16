@@ -10,7 +10,7 @@ export class TradeService {
 			status: {
 				$in: [TradeStatus.ACTIVE, TradeStatus.PENDING, TradeStatus.PROCESSED],
 			},
-		});
+		}).sort({ createdAt: -1 });
 	}
 
 	public async createTrade(newTrade: ICreateMasterTrade): Promise<IMasterTrade | null> {
@@ -207,7 +207,7 @@ export class TradeService {
 					{
 						masterTradeId: trade.id,
 						stopLossPrice: trade.stopLossPrice,
-						takeProfitPrice: trade.takeProfitPrice,
+						takeProfitPrice: trade.takeProfitPrice ?? 0,
 						entryPrice: trade.entryPrice,
 						baseAsset: trade.baseAsset,
 						quoteCurrency: trade.quoteCurrency,
