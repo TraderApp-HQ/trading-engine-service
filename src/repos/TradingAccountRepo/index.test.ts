@@ -12,7 +12,7 @@ import {
 import { ITradingAccountInfo } from "../../factories/interfaces";
 
 const mockCheckToggleFlag = jest.fn().mockResolvedValue(false);
-jest.mock("../../utils/helpers/SplitIOClient", () => {
+jest.mock("../../clients/SplitIOClient", () => {
 	return {
 		FeatureFlagManager: function () {
 			return {

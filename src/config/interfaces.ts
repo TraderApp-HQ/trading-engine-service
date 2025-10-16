@@ -5,6 +5,7 @@ import {
 	AccountType,
 	Category,
 	Currency,
+	OrderPlacementType,
 	TradingPlatform,
 	TradingRuleCategory,
 	TradingRuleType,
@@ -98,4 +99,19 @@ export interface IPlatformTradingRuleResult {
 	stepSize?: number;
 	minNotional: number;
 	platform: TradingPlatform;
+}
+
+export interface IProcessUserTradingWithMasterTradeEvent {
+	masterTradeId: string;
+	stopLossPrice: number;
+	takeProfitPrice: number;
+	entryPrice: number;
+	baseAsset: string;
+	quoteCurrency: string;
+	pair: string;
+	supportedTradingPlatforms: TradingPlatform[];
+	tradeSide: TradeSide;
+	targetOrdersAmountToFill: number;
+	orderPlacementType?: OrderPlacementType; // default is MARKET if not provided
+	accountType?: AccountType; // default is FUTURES if not provided
 }

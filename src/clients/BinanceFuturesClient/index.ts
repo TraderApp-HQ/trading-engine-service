@@ -10,11 +10,28 @@ import type {
 	TakeProfitMarketNewFuturesOrder,
 	QueryFuturesOrderResult,
 	PositionRiskResult,
+	CandleChartInterval_LT,
 } from "binance-api-node";
 
 type OrderType = "LIMIT" | "MARKET" | "STOP" | "STOP_MARKET" | "TAKE_PROFIT" | "TAKE_PROFIT_MARKET";
 
-export class BinanceFuturesService {
+export interface IOHLCData {
+	symbol: string;
+	open: string;
+	high: string;
+	low: string;
+	close: string;
+	openTime: number;
+	closeTime: number;
+	volume: string;
+}
+
+export interface IFetchBinanceFuturesCandlesInput {
+	pairs: string[];
+	interval: string;
+}
+
+export class BinanceFuturesClient {
 	private readonly client: ReturnType<typeof Binance>;
 
 	constructor(apiKey: string, apiSecret: string) {
@@ -388,73 +405,45 @@ export class BinanceFuturesService {
 			throw new Error(`Failed to get all open positions: ${error.message}`);
 		}
 	}
-}
 
-(async function () {
-	// Example usage:
-	const tradingService = new BinanceFuturesService(
-		"B2kKxLsqPMonwKnkEktHL4tiGXCCylS6cQ2TsiEg4UX6DwEeZqSTQyPXDZYGYvn5",
-		"6B1zhAy2fr1FERcfldKx7QFIs8VJV6ZlYoEygvNKnrwCqzkg3ZNpQR3tAvPHOG3L"
-	);
-
-	// Place main order first
-	const mainOrder = await tradingService.placeTrade({
-		symbol: "BTCUSDT",
-		side: OrderSide.SELL,
-		quantity: 0.33,
-		type: "LIMIT",
-		leverage: 100,
-		price: 121586,
-		// positionSide: PositionSide.LONG,
-		marginType: "CROSSED",
-	});
-
-	// qty: 0.3335
-	// posSize: 40555.7
-	// reqMargin: 405.557
-
-	console.log("============ Main order placed ==========", { mainOrder });
-
-	// Wait a bit for the order to be filled, then place targets and stop loss
-	setTimeout(async () => {
+	async fetchBinanceFuturesCandles(
+		input: IFetchBinanceFuturesCandlesInput
+	): Promise<IOHLCData[]> {
 		try {
-			// Place target profit orders
-			const targetProfitOrders = await tradingService.placeTargetProfitOrders({
-				origClientOrderId: mainOrder.clientOrderId,
-				symbol: "BTCUSDT",
-				mainOrderSide: OrderSide.SELL,
-				targetProfits: [{ price: 120071, percent: 100 }],
-			});
-			console.log("============ Target profit orders placed ==========", {
-				targetProfitOrders,
+			// Fetch candles for all pairs in parallel
+			const candlePromises = input.pairs.map(async (symbol) => {
+				try {
+					const candles = await this.client.futuresCandles({
+						symbol,
+						interval:
+							(input.interval as CandleChartInterval_LT) ||
+							("1m" as CandleChartInterval_LT),
+						limit: 1, // Get only the latest candle
+					});
+
+					// Get the most recent candle
+					const latestCandle = candles[candles.length - 1];
+
+					return {
+						symbol,
+						open: latestCandle.open,
+						high: latestCandle.high,
+						low: latestCandle.low,
+						close: latestCandle.close,
+						openTime: latestCandle.openTime,
+						closeTime: latestCandle.closeTime,
+						volume: latestCandle.volume,
+					};
+				} catch (error: any) {
+					console.error(`Error fetching candles for ${symbol}:`, error.message);
+					throw error;
+				}
 			});
 
-			// Place stop loss order
-			const stopLossOrder = await tradingService.placeStopLossOrder({
-				origClientOrderId: mainOrder.clientOrderId,
-				symbol: "BTCUSDT",
-				mainOrderSide: OrderSide.SELL,
-				stopLoss: { price: 122335.5 },
-			});
-			console.log("============ Stop loss order placed ==========", { stopLossOrder });
-		} catch (error) {
-			console.error("Error placing target profit or stop loss orders:", error);
+			const results = await Promise.all(candlePromises);
+			return results;
+		} catch (error: any) {
+			throw new Error(`Failed to fetch Binance futures candles: ${error.message}`);
 		}
-	}, 10000); // Wait 10 seconds for order to be filled
-
-	// get trade
-	// const res = await tradingService.getTradeById({ orderId: 4570254138, symbol: "ETHUSDT" });
-	// console.log("============ response ==========", { res });
-
-	// get open position for symbol
-	// const res = await tradingService.getOpenPosition({ symbol: "ETHUSDT" });
-	// console.log("============ response ==========", { res });
-
-	// get all open positions
-	// const res = await tradingService.getAllOpenPositions();
-	// console.log("============ response ==========", { res });
-
-	// close all positions
-	// const res = await tradingService.closeAllPositions({ symbol: "ETHUSDT" });
-	// console.log("============ response ==========", { res });
-})();
+	}
+}

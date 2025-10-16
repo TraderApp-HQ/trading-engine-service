@@ -2,9 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 import { OrderBatchStatus, TradingPlatform } from "../config/enums";
 
 export interface IOrderBatch extends Document {
-	// batchId: string;
 	id: string;
-	// orderId: mongoose.Types.ObjectId; // reference to order _id
 	baseAsset: string;
 	quoteCurrency: string;
 	baseQuantity: number;
@@ -13,15 +11,13 @@ export interface IOrderBatch extends Document {
 	tradingAccountId: mongoose.Types.ObjectId; // reference to the user-trading-account _id
 	platformName: TradingPlatform;
 	platformId: number;
-	// avgBuyPrice: number;
-	// createdAt: string;
-	// updatedAt: string;
+	externalOrderId: string; // exchange/broker orderId
+	createdAt: Date;
+	updatedAt: Date;
 }
 
 const OrderBatchSchema = new Schema<IOrderBatch>(
 	{
-		// batchId: { type: String, unique: true, required: true },
-		// orderId: { type: mongoose.Schema.Types.ObjectId, ref: "order", required: true },
 		baseAsset: { type: String, required: true },
 		baseQuantity: { type: Number, required: true },
 		quoteCurrency: { type: String, required: true },
@@ -38,9 +34,7 @@ const OrderBatchSchema = new Schema<IOrderBatch>(
 			required: true,
 		},
 		platformId: { type: Number, required: true },
-		// avgBuyPrice: { type: Number, required: true },
-		// createdAt: { type: Date, default: Date.now },
-		// updatedAt: { type: Date, default: Date.now },
+		externalOrderId: { type: String, required: true },
 	},
 	{ versionKey: false, timestamps: true }
 );
@@ -56,8 +50,6 @@ OrderBatchSchema.set("toJSON", {
 });
 
 OrderBatchSchema.index({
-	// batchId: 1,
-	// orderId: 1,
 	tradingAccountId: 1,
 	platformName: 1,
 	platformId: 1,

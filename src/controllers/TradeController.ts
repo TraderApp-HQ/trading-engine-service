@@ -10,12 +10,11 @@ import { v4 as uuidv4 } from "uuid";
 export async function getTradesHandler(req: Request, res: Response, next: NextFunction) {
 	const tradeService = new TradeService();
 	try {
-		const activeTrades = await tradeService.getActiveTrades();
-
+		const activeMasterTrades = await tradeService.getActiveMasterTrades();
 		res.status(HttpStatus.OK).json(
 			apiResponseHandler({
 				type: ResponseType.SUCCESS,
-				object: activeTrades,
+				object: activeMasterTrades,
 			})
 		);
 	} catch (error) {

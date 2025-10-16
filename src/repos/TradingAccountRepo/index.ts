@@ -13,7 +13,7 @@ import UserTradingAccountBalance, {
 	IUserTradingAccountBalance,
 } from "../../models/UserTradingAccountBalance";
 import { decrypt, encrypt } from "../../utils/encryption";
-import { FeatureFlagManager } from "../../utils/helpers/SplitIOClient";
+import { FeatureFlagManager } from "../../clients/SplitIOClient";
 
 export interface ITradingAccountsInput {
 	userId: string;
