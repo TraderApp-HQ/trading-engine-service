@@ -42,24 +42,28 @@ export class TradeService {
 			});
 
 			// Process each trade
-			const updatePromises = trades.map(async (trade) => {
-				const candle = ohlcMap.get(trade.pair);
-				if (!candle) {
-					console.warn(`No candle data found for pair: ${trade.pair}`);
-					return;
-				}
+			await Promise.all(
+				trades.map(async (trade) => {
+					const candle = ohlcMap.get(trade.pair);
+					if (!candle) {
+						console.warn(`No candle data found for pair: ${trade.pair}`);
+						return;
+					}
 
-				if (trade.status === TradeStatus.ACTIVE) {
-					return this.processActiveTrade(trade, candle);
-				} else if (trade.status === TradeStatus.PROCESSED) {
-					return this.processProcessedTrade(trade, candle);
-				} else if (trade.status === TradeStatus.PENDING) {
-					return this.processPendingTrade(trade, candle);
-				}
-			});
+					if (trade.status === TradeStatus.ACTIVE) {
+						console.log("Inside ACTIVE trade block", { trade, candle });
+						await this.processActiveTrade(trade, candle);
+					} else if (trade.status === TradeStatus.PROCESSED) {
+						console.log("Inside PROCESSED trade block", { trade, candle });
+						await this.processProcessedTrade(trade, candle);
+					} else if (trade.status === TradeStatus.PENDING) {
+						console.log("Inside PENDING trade block", { trade, candle });
+						await this.processPendingTrade(trade, candle);
+					}
+				})
+			);
 
-			await Promise.all(updatePromises);
-			console.log(`Successfully processed ${trades.length} trades`);
+			// await Promise.all(updatePromises);
 		} catch (error: unknown) {
 			if (error instanceof Error) {
 				throw new Error(`Failed to process master trades: ${error.message}`);
@@ -72,6 +76,7 @@ export class TradeService {
 	 * Process ACTIVE trade - update PNL and current price
 	 */
 	private async processActiveTrade(trade: IMasterTrade, candle: IOHLCData): Promise<void> {
+		console.log("Processing ACTIVE trade", { trade, candle });
 		const closePrice = parseFloat(candle.close);
 		let pnl: number;
 		let pnlPercentage: number;
@@ -115,6 +120,7 @@ export class TradeService {
 	 * Process PROCESSED trade - check if entry price is reached
 	 */
 	private async processProcessedTrade(trade: IMasterTrade, candle: IOHLCData): Promise<void> {
+		console.log("Processing PROCESSED trade", { trade, candle });
 		const highPrice = parseFloat(candle.high);
 		const lowPrice = parseFloat(candle.low);
 		let triggerReached = false;
@@ -187,6 +193,7 @@ export class TradeService {
 	 * Process PENDING trade - check if trigger price is reached
 	 */
 	private async processPendingTrade(trade: IMasterTrade, candle: IOHLCData): Promise<void> {
+		console.log("Processing PENDING trade", { trade, candle });
 		const highPrice = parseFloat(candle.high);
 		const lowPrice = parseFloat(candle.low);
 		let triggerReached = false;
