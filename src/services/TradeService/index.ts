@@ -8,7 +8,12 @@ export class TradeService {
 	public async getActiveMasterTrades(): Promise<IMasterTrade[]> {
 		return MasterTrade.find({
 			status: {
-				$in: [TradeStatus.ACTIVE, TradeStatus.PENDING, TradeStatus.PROCESSED],
+				$in: [
+					TradeStatus.ACTIVE,
+					TradeStatus.PENDING,
+					TradeStatus.PROCESSING,
+					TradeStatus.PROCESSED,
+				],
 			},
 		}).sort({ createdAt: -1 });
 	}
@@ -123,18 +128,18 @@ export class TradeService {
 		console.log("Processing PROCESSED trade", { trade, candle });
 		const highPrice = parseFloat(candle.high);
 		const lowPrice = parseFloat(candle.low);
-		let triggerReached = false;
+		let entryPriceReached = false;
 
 		// Check if trigger price is reached based on trade side
 		if (trade.side === TradeSide.LONG) {
 			// For LONG trades, check if HIGH price reached or exceeded trigger
-			triggerReached = lowPrice <= trade.entryPrice;
+			entryPriceReached = lowPrice <= trade.entryPrice;
 		} else {
 			// For SHORT trades, check if LOW price reached or went below trigger
-			triggerReached = highPrice >= trade.entryPrice;
+			entryPriceReached = highPrice >= trade.entryPrice;
 		}
 
-		if (triggerReached) {
+		if (entryPriceReached) {
 			try {
 				const currentPrice = parseFloat(candle.close);
 				// const processUserTradingWithMasterTradeEvent: IProcessUserTradingWithMasterTradeEvent =
@@ -236,7 +241,7 @@ export class TradeService {
 						{ _id: trade._id },
 						{
 							$set: {
-								status: TradeStatus.PROCESSED,
+								status: TradeStatus.PROCESSING,
 								currentPrice,
 								pnl: 0,
 								pnlPercentage: 0,
@@ -246,7 +251,7 @@ export class TradeService {
 				]);
 
 				console.log(
-					`✅ PENDING trade ${trade.pair} PROCESSED - Trigger and published to queue: ${
+					`✅ PENDING trade ${trade.pair} PROCESSING - Trigger and published to queue: ${
 						trade.ordersTriggerPrice
 					}, ${trade.side === TradeSide.LONG ? "Low" : "High"}: ${
 						trade.side === TradeSide.LONG ? lowPrice : highPrice

@@ -392,7 +392,7 @@ describe("TradeService", () => {
 				await tradeService.processMasterTradesWithCandles(ohlcData, [trade]);
 
 				const updatedTrade = await MasterTrade.findById(trade._id);
-				expect(updatedTrade?.status).toBe(TradeStatus.PROCESSED);
+				expect(updatedTrade?.status).toBe(TradeStatus.PROCESSING);
 				expect(updatedTrade?.pnl).toBe(0);
 				expect(updatedTrade?.pnlPercentage).toBe(0);
 				expect(updatedTrade?.currentPrice).toBe(59800);
@@ -446,7 +446,7 @@ describe("TradeService", () => {
 				await tradeService.processMasterTradesWithCandles(ohlcData, [trade]);
 
 				const updatedTrade = await MasterTrade.findById(trade._id);
-				expect(updatedTrade?.status).toBe(TradeStatus.PROCESSED);
+				expect(updatedTrade?.status).toBe(TradeStatus.PROCESSING);
 				expect(updatedTrade?.currentPrice).toBe(60200);
 
 				expect(mockPublishMessageToQueue).toHaveBeenCalledTimes(1);
