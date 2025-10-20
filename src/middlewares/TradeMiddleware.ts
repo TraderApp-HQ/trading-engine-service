@@ -12,9 +12,9 @@ import {
 
 export async function validateGetTradesRequest(req: Request, res: Response, next: NextFunction) {
 	try {
-		// check accessToken
-		await checkUser(req);
-
+		// check user
+		const user = await checkUser(req);
+		req.body.user = user;
 		next();
 	} catch (err: any) {
 		next(err);
@@ -82,6 +82,36 @@ export async function validateCreateTradeRequest(req: Request, res: Response, ne
 
 		if (error) {
 			// strip string of double quotes
+			error.message = error.message.replace(/\"/g, "");
+			next(error);
+			return;
+		}
+
+		next();
+	} catch (err: any) {
+		next(err);
+	}
+}
+
+export async function validateGetTradeByIdRequest(
+	req: Request,
+	_res: Response,
+	next: NextFunction
+) {
+	try {
+		// Validate user
+		await checkUser(req);
+
+		const paramsSchema = Joi.object({
+			id: Joi.string().required().label("Trade ID"),
+		});
+		const { error, value } = paramsSchema.validate(req.params, {
+			abortEarly: true,
+		});
+
+		req.params = value;
+
+		if (error) {
 			error.message = error.message.replace(/\"/g, "");
 			next(error);
 			return;

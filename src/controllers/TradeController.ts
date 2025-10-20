@@ -7,7 +7,7 @@ import { ICreateMasterTrade } from "../models/MasterTrade";
 import { deleteFile, uploadFile } from "../utils/s3FileService";
 import { v4 as uuidv4 } from "uuid";
 
-export async function getTradesHandler(req: Request, res: Response, next: NextFunction) {
+export async function getMasterTradesHandler(req: Request, res: Response, next: NextFunction) {
 	const tradeService = new TradeService();
 	try {
 		const activeMasterTrades = await tradeService.getActiveMasterTrades();
@@ -22,7 +22,52 @@ export async function getTradesHandler(req: Request, res: Response, next: NextFu
 	}
 }
 
-export async function createTradesHandler(req: Request, res: Response, next: NextFunction) {
+export async function getUserTradesHandler(req: Request, res: Response, next: NextFunction) {
+	const tradeService = new TradeService();
+	const userId = req.body.user.id;
+	try {
+		const activeUserTrades = await tradeService.getUserActiveTrades({ userId });
+		res.status(HttpStatus.OK).json(
+			apiResponseHandler({
+				type: ResponseType.SUCCESS,
+				object: activeUserTrades,
+			})
+		);
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function getTradeByIdHandler(req: Request, res: Response, next: NextFunction) {
+	const tradeService = new TradeService();
+	try {
+		const { id } = req.params;
+
+		// Fetch trade using the service method
+		const trade = await tradeService.getTradeById(id);
+
+		if (!trade) {
+			res.status(HttpStatus.NOT_FOUND).json(
+				apiResponseHandler({
+					type: ResponseType.ERROR,
+					message: "Trade not found.",
+				})
+			);
+		}
+
+		res.status(HttpStatus.OK).json(
+			apiResponseHandler({
+				type: ResponseType.SUCCESS,
+				message: "Trade fetched successfully.",
+				object: trade,
+			})
+		);
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function createMasterTradesHandler(req: Request, res: Response, next: NextFunction) {
 	const tradeService = new TradeService();
 
 	let uploadedChartUrl: string | boolean = false;

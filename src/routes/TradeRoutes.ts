@@ -1,13 +1,21 @@
 import { Router } from "express";
 import {
 	validateCreateTradeRequest,
+	validateGetTradeByIdRequest,
 	validateGetTradesRequest,
 } from "../middlewares/TradeMiddleware";
-import { createTradesHandler, getTradesHandler } from "../controllers/TradeController";
+import {
+	createMasterTradesHandler,
+	getMasterTradesHandler,
+	getTradeByIdHandler,
+	getUserTradesHandler,
+} from "../controllers/TradeController";
 
 const router = Router();
 
-router.get("/", validateGetTradesRequest, getTradesHandler);
-router.post("/", validateCreateTradeRequest, createTradesHandler);
+router.get("/master-trade", validateGetTradesRequest, getMasterTradesHandler);
+router.get("/user-trade", validateGetTradesRequest, getUserTradesHandler);
+router.get("/master-trade/:id", validateGetTradeByIdRequest, getTradeByIdHandler);
+router.post("/master-trade", validateCreateTradeRequest, createMasterTradesHandler);
 
 export default router;

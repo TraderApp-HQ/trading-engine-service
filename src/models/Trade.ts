@@ -15,9 +15,17 @@ export interface ITrade extends Document {
 	pair: string;
 	side: TradeSide;
 	pnl: number;
+	pnlPercentage: number;
+	estimatedProfit: number;
+	estimatedLoss: number;
 	status: TradeStatus;
 	createdAt: Date;
 	updatedAt: Date;
+}
+
+export interface IUserTrade extends ITrade {
+	baseAssetLogoUrl: string;
+	currentPrice: number;
 }
 
 const TradeSchema = new Schema<ITrade>(
@@ -34,6 +42,9 @@ const TradeSchema = new Schema<ITrade>(
 		pair: { type: String, required: true },
 		side: { type: String, enum: Object.values(TradeSide), required: true },
 		pnl: { type: Number, default: 0 },
+		pnlPercentage: { type: Number, default: 0 },
+		estimatedProfit: { type: Number, default: 0 },
+		estimatedLoss: { type: Number, default: 0 },
 		status: { type: String, enum: Object.values(TradeStatus), required: true },
 	},
 	{ versionKey: false, timestamps: true }
