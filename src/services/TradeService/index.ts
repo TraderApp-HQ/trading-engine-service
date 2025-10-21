@@ -20,30 +20,40 @@ export class TradeService {
 	}
 
 	public async getUserActiveTrades({ userId }: { userId: string }): Promise<IUserTrade[]> {
-		const trades = await Trade.find({
-			userId,
-			status: {
-				$in: [
-					TradeStatus.ACTIVE,
-					TradeStatus.PENDING,
-					TradeStatus.PROCESSING,
-					TradeStatus.PROCESSED,
-				],
-			},
-		})
-			.populate({ path: "masterTradeId", select: "baseAssetLogoUrl currentPrice -_id -__v" })
-			.sort({ createdAt: -1 });
+		try {
+			const trades = await Trade.find({
+				userId,
+				status: {
+					$in: [
+						TradeStatus.ACTIVE,
+						TradeStatus.PENDING,
+						TradeStatus.PROCESSING,
+						TradeStatus.PROCESSED,
+					],
+				},
+			})
+				.populate({
+					path: "masterTradeId",
+					select: "baseAssetLogoUrl currentPrice -_id -__v",
+				})
+				.sort({ createdAt: -1 });
 
-		const userTrades = trades.map((trade: any) => {
-			const tradeObj = trade.toObject();
-			return {
-				...tradeObj,
-				baseAssetLogoUrl: tradeObj.masterTradeId?.baseAssetLogoUrl,
-				currentPrice: tradeObj.masterTradeId?.currentPrice,
-			};
-		});
+			const userTrades = trades.map((trade: any) => {
+				const tradeObj = trade.toObject();
+				return {
+					...tradeObj,
+					baseAssetLogoUrl: tradeObj.masterTradeId?.baseAssetLogoUrl,
+					currentPrice: tradeObj.masterTradeId?.currentPrice,
+				};
+			});
 
-		return userTrades as IUserTrade[];
+			return userTrades as IUserTrade[];
+		} catch (error) {
+			if (error instanceof Error) {
+				throw new Error(error.message);
+			}
+			throw new Error("An unknown error occurred while retrieving trades.");
+		}
 	}
 
 	public async getTradeById(id: string): Promise<IMasterTrade | null> {
