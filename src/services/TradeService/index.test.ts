@@ -173,8 +173,8 @@ describe("TradeService", () => {
 					side: TradeSide.LONG,
 					status: TradeStatus.ACTIVE,
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
-					estimatedProfit: 0,
-					estimatedLoss: 0,
+					estimatedProfit: 500, // (65000 - 60000) * 0.1 = 500
+					estimatedLoss: 200, // (60000 - 58000) * 0.1 = 200
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -197,10 +197,10 @@ describe("TradeService", () => {
 
 				const updatedTrade = await MasterTrade.findById(trade._id);
 				expect(updatedTrade?.currentPrice).toBe(61200);
-				// PNL% = (61200 - 60000) / 60000 * 100 = 2%
-				// PNL = 6000 * 2 / 100 = 120
-				expect(updatedTrade?.pnlPercentage).toBeCloseTo(2, 2);
+				// pnlAmount = (61200 - 60000) * 0.1 = 120
 				expect(updatedTrade?.pnl).toBeCloseTo(120, 2);
+				// pnlPercentage = (120 / 200) * 100 = 60%
+				expect(updatedTrade?.pnlPercentage).toBeCloseTo(60, 2);
 			});
 
 			it("should calculate negative PNL for LONG trade when price decreases", async () => {
@@ -220,8 +220,8 @@ describe("TradeService", () => {
 					side: TradeSide.LONG,
 					status: TradeStatus.ACTIVE,
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
-					estimatedProfit: 0,
-					estimatedLoss: 0,
+					estimatedProfit: 500,
+					estimatedLoss: 200, // (60000 - 58000) * 0.1 = 200
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -244,10 +244,10 @@ describe("TradeService", () => {
 
 				const updatedTrade = await MasterTrade.findById(trade._id);
 				expect(updatedTrade?.currentPrice).toBe(58800);
-				// PNL% = (58800 - 60000) / 60000 * 100 = -2%
-				// PNL = 6000 * -2 / 100 = -120
-				expect(updatedTrade?.pnlPercentage).toBeCloseTo(-2, 2);
+				// pnlAmount = (58800 - 60000) * 0.1 = -120
 				expect(updatedTrade?.pnl).toBeCloseTo(-120, 2);
+				// pnlPercentage = (-120 / 200) * 100 = -60%
+				expect(updatedTrade?.pnlPercentage).toBeCloseTo(-60, 2);
 			});
 
 			it("should calculate positive PNL for SHORT trade when price decreases", async () => {
@@ -267,8 +267,8 @@ describe("TradeService", () => {
 					side: TradeSide.SHORT,
 					status: TradeStatus.ACTIVE,
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
-					estimatedProfit: 0,
-					estimatedLoss: 0,
+					estimatedProfit: 500, // (60000 - 55000) * 0.1 = 500
+					estimatedLoss: 200, // (62000 - 60000) * 0.1 = 200
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -291,10 +291,10 @@ describe("TradeService", () => {
 
 				const updatedTrade = await MasterTrade.findById(trade._id);
 				expect(updatedTrade?.currentPrice).toBe(58800);
-				// PNL% = (60000 - 58800) / 60000 * 100 = 2%
-				// PNL = 6000 * 2 / 100 = 120
-				expect(updatedTrade?.pnlPercentage).toBeCloseTo(2, 2);
+				// pnlAmount = (60000 - 58800) * 0.1 = 120
 				expect(updatedTrade?.pnl).toBeCloseTo(120, 2);
+				// pnlPercentage = (120 / 200) * 100 = 60%
+				expect(updatedTrade?.pnlPercentage).toBeCloseTo(60, 2);
 			});
 
 			it("should calculate negative PNL for SHORT trade when price increases", async () => {
@@ -314,8 +314,8 @@ describe("TradeService", () => {
 					side: TradeSide.SHORT,
 					status: TradeStatus.ACTIVE,
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
-					estimatedProfit: 0,
-					estimatedLoss: 0,
+					estimatedProfit: 500,
+					estimatedLoss: 200, // (62000 - 60000) * 0.1 = 200
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -338,10 +338,10 @@ describe("TradeService", () => {
 
 				const updatedTrade = await MasterTrade.findById(trade._id);
 				expect(updatedTrade?.currentPrice).toBe(61200);
-				// PNL% = (60000 - 61200) / 60000 * 100 = -2%
-				// PNL = 6000 * -2 / 100 = -120
-				expect(updatedTrade?.pnlPercentage).toBeCloseTo(-2, 2);
+				// pnlAmount = (60000 - 61200) * 0.1 = -120
 				expect(updatedTrade?.pnl).toBeCloseTo(-120, 2);
+				// pnlPercentage = (-120 / 200) * 100 = -60%
+				expect(updatedTrade?.pnlPercentage).toBeCloseTo(-60, 2);
 			});
 		});
 
@@ -603,8 +603,8 @@ describe("TradeService", () => {
 					side: TradeSide.LONG,
 					status: TradeStatus.ACTIVE,
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
-					estimatedProfit: 0,
-					estimatedLoss: 0,
+					estimatedProfit: 500,
+					estimatedLoss: 200,
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -626,8 +626,8 @@ describe("TradeService", () => {
 					side: TradeSide.SHORT,
 					status: TradeStatus.ACTIVE,
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
-					estimatedProfit: 0,
-					estimatedLoss: 0,
+					estimatedProfit: 200, // (3000 - 2800) * 1 = 200
+					estimatedLoss: 100, // (3100 - 3000) * 1 = 100
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -662,10 +662,16 @@ describe("TradeService", () => {
 				const updatedEthTrade = await MasterTrade.findById(ethTrade._id);
 
 				expect(updatedBtcTrade?.currentPrice).toBe(60600);
-				expect(updatedBtcTrade?.pnlPercentage).toBeCloseTo(1, 2);
+				// BTC: pnlAmount = (60600 - 60000) * 0.1 = 60
+				expect(updatedBtcTrade?.pnl).toBeCloseTo(60, 2);
+				// BTC: pnlPercentage = (60 / 200) * 100 = 30%
+				expect(updatedBtcTrade?.pnlPercentage).toBeCloseTo(30, 2);
 
 				expect(updatedEthTrade?.currentPrice).toBe(2970);
-				expect(updatedEthTrade?.pnlPercentage).toBeCloseTo(1, 2);
+				// ETH: pnlAmount = (3000 - 2970) * 1 = 30
+				expect(updatedEthTrade?.pnl).toBeCloseTo(30, 2);
+				// ETH: pnlPercentage = (30 / 100) * 100 = 30%
+				expect(updatedEthTrade?.pnlPercentage).toBeCloseTo(30, 2);
 			});
 
 			it("should handle empty trades array", async () => {
@@ -896,8 +902,8 @@ describe("TradeService", () => {
 				side: TradeSide.LONG,
 				status: TradeStatus.PROCESSED,
 				supportedTradingPlatforms: [TradingPlatform.BINANCE],
-				estimatedProfit: 0,
-				estimatedLoss: 0,
+				estimatedProfit: 500,
+				estimatedLoss: 200,
 				candlestick: CandleStick.fifteenMin,
 				risk: TradeRisk.low,
 				category: Category.CRYPTO,
@@ -943,8 +949,10 @@ describe("TradeService", () => {
 			updatedTrade = await MasterTrade.findById(trade._id);
 			expect(updatedTrade?.status).toBe(TradeStatus.ACTIVE);
 			expect(updatedTrade?.currentPrice).toBe(60600);
-			expect(updatedTrade?.pnlPercentage).toBeCloseTo(1, 2);
-			expect(updatedTrade?.pnl).toBeCloseTo(60, 2); // 1% of 6000
+			// pnlAmount = (60600 - 60000) * 0.1 = 60
+			expect(updatedTrade?.pnl).toBeCloseTo(60, 2);
+			// pnlPercentage = (60 / 200) * 100 = 30%
+			expect(updatedTrade?.pnlPercentage).toBeCloseTo(30, 2);
 		});
 	});
 });

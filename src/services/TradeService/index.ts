@@ -84,6 +84,37 @@ export class TradeService {
 		}
 	}
 
+	public calculatePnL({
+		side,
+		entryPrice,
+		targetPrice,
+		baseQuantity,
+		riskUSDT,
+		requiredMargin,
+	}: {
+		side: TradeSide;
+		entryPrice: number;
+		targetPrice: number;
+		baseQuantity: number;
+		riskUSDT: number;
+		requiredMargin: number;
+	}): {
+		pnlAmount: number;
+		pnlPercentOfRisk: number;
+		pnlPercentOfRequiredMargin: number;
+	} {
+		const priceDiff =
+			side === TradeSide.LONG ? targetPrice - entryPrice : entryPrice - targetPrice;
+
+		const pnlAmount = priceDiff * baseQuantity;
+
+		return {
+			pnlAmount: Number(pnlAmount.toFixed(2)),
+			pnlPercentOfRisk: Number(((pnlAmount / riskUSDT) * 100).toFixed(2)),
+			pnlPercentOfRequiredMargin: Number(((pnlAmount / requiredMargin) * 100).toFixed(2)),
+		};
+	}
+
 	/**
 	 * Process master trades based on Binance futures candles data
 	 * - For ACTIVE trades: Updates PNL based on current closing price
@@ -135,25 +166,17 @@ export class TradeService {
 	 * Process ACTIVE trade - update PNL and current price
 	 */
 	private async processActiveTrade(trade: IMasterTrade, candle: IOHLCData): Promise<void> {
-		console.log("Processing ACTIVE trade", { trade, candle });
 		const closePrice = parseFloat(candle.close);
-		let pnl: number;
-		let pnlPercentage: number;
 
 		// Calculate PNL percentage and amount based on trade side
-		if (trade.side === TradeSide.LONG) {
-			// Calculate PNL percentage
-			pnlPercentage = ((closePrice - trade.entryPrice) / trade.entryPrice) * 100;
-
-			// Calculate PNL amount based on the pnl percentage of trade.quoteTotal
-			pnl = (trade.quoteTotal * pnlPercentage) / 100;
-		} else {
-			// Calculate PNL percentage
-			pnlPercentage = ((trade.entryPrice - closePrice) / trade.entryPrice) * 100;
-
-			// Calculate PNL amount based on the pnl percentage of trade.quoteTotal
-			pnl = (trade.quoteTotal * pnlPercentage) / 100;
-		}
+		const { pnlAmount, pnlPercentOfRisk } = this.calculatePnL({
+			side: trade.side,
+			entryPrice: trade.entryPrice,
+			targetPrice: closePrice,
+			baseQuantity: trade.baseQuantity,
+			riskUSDT: trade.estimatedLoss,
+			requiredMargin: trade.quoteTotal,
+		});
 
 		// Update trade in database
 		await MasterTrade.updateOne(
@@ -161,17 +184,16 @@ export class TradeService {
 			{
 				$set: {
 					currentPrice: closePrice,
-					pnl,
-					pnlPercentage,
-					updatedAt: new Date(),
+					pnl: pnlAmount,
+					pnlPercentage: pnlPercentOfRisk,
 				},
 			}
 		);
 
 		console.log(
-			`Updated ACTIVE trade ${trade.pair} - Price: ${closePrice}, PNL: ${pnl.toFixed(
+			`Updated ACTIVE trade ${trade.pair} - Price: ${closePrice}, PNL: ${pnlAmount.toFixed(
 				2
-			)} (${pnlPercentage.toFixed(2)}%)`
+			)} (${pnlPercentOfRisk.toFixed(2)}%)`
 		);
 	}
 
@@ -179,7 +201,6 @@ export class TradeService {
 	 * Process PROCESSED trade - check if entry price is reached
 	 */
 	private async processProcessedTrade(trade: IMasterTrade, candle: IOHLCData): Promise<void> {
-		console.log("Processing PROCESSED trade", { trade, candle });
 		const highPrice = parseFloat(candle.high);
 		const lowPrice = parseFloat(candle.low);
 		let entryPriceReached = false;
@@ -252,7 +273,6 @@ export class TradeService {
 	 * Process PENDING trade - check if trigger price is reached
 	 */
 	private async processPendingTrade(trade: IMasterTrade, candle: IOHLCData): Promise<void> {
-		console.log("Processing PENDING trade", { trade, candle });
 		const highPrice = parseFloat(candle.high);
 		const lowPrice = parseFloat(candle.low);
 		let triggerReached = false;
