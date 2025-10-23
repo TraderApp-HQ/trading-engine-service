@@ -1,8 +1,9 @@
-import { TradeStatus, TradeSide } from "../../config/enums";
-import { ICreateMasterTrade, IMasterTrade, MasterTrade } from "../../models/MasterTrade";
 import { IOHLCData } from "../../clients/BinanceFuturesClient";
-import { IProcessUserTradingWithMasterTradeEvent } from "../../config/interfaces";
 import { publishMessageToQueue } from "../../clients/SQSClient/helpers";
+import { TradeSide, TradeStatus } from "../../config/enums";
+import { IProcessUserTradingWithMasterTradeEvent } from "../../config/interfaces";
+import { ICreateMasterTrade, IMasterTrade, MasterTrade } from "../../models/MasterTrade";
+import { IUserTrade, Trade } from "../../models/Trade";
 
 export class TradeService {
 	public async getActiveMasterTrades(): Promise<IMasterTrade[]> {
@@ -16,6 +17,59 @@ export class TradeService {
 				],
 			},
 		}).sort({ createdAt: -1 });
+	}
+
+	public async getUserActiveTrades({ userId }: { userId: string }): Promise<IUserTrade[]> {
+		try {
+			const trades = await Trade.find({
+				userId,
+				status: {
+					$in: [
+						TradeStatus.ACTIVE,
+						TradeStatus.PENDING,
+						TradeStatus.PROCESSING,
+						TradeStatus.PROCESSED,
+					],
+				},
+			})
+				.populate({
+					path: "masterTradeId",
+					select: "baseAssetLogoUrl currentPrice -_id -__v",
+				})
+				.sort({ createdAt: -1 });
+
+			const userTrades = trades.map((trade: any) => {
+				const tradeObj = trade.toObject();
+				return {
+					...tradeObj,
+					baseAssetLogoUrl: tradeObj.masterTradeId?.baseAssetLogoUrl,
+					currentPrice: tradeObj.masterTradeId?.currentPrice,
+				};
+			});
+
+			return userTrades as IUserTrade[];
+		} catch (error) {
+			if (error instanceof Error) {
+				throw new Error(error.message);
+			}
+			throw new Error("An unknown error occurred while retrieving trades.");
+		}
+	}
+
+	public async getTradeById(id: string): Promise<IMasterTrade | null> {
+		try {
+			const trade = await MasterTrade.findById(id);
+
+			if (!trade) {
+				return null;
+			}
+			return trade as IMasterTrade;
+		} catch (error) {
+			if (error instanceof Error) {
+				throw new Error(error.message);
+			}
+			throw new Error("An unknown error occurred while retrieving the trade.");
+		}
 	}
 
 	public async createTrade(newTrade: ICreateMasterTrade): Promise<IMasterTrade | null> {
