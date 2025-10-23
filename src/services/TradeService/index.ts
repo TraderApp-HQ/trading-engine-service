@@ -110,8 +110,10 @@ export class TradeService {
 
 		return {
 			pnlAmount: Number(pnlAmount.toFixed(2)),
-			pnlPercentOfRisk: Number(((pnlAmount / riskUSDT) * 100).toFixed(2)),
-			pnlPercentOfRequiredMargin: Number(((pnlAmount / requiredMargin) * 100).toFixed(2)),
+			pnlPercentOfRisk:
+				riskUSDT === 0 ? 0 : Number(((pnlAmount / riskUSDT) * 100).toFixed(2)),
+			pnlPercentOfRequiredMargin:
+				requiredMargin === 0 ? 0 : Number(((pnlAmount / requiredMargin) * 100).toFixed(2)),
 		};
 	}
 
