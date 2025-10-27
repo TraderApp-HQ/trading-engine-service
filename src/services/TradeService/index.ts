@@ -34,7 +34,7 @@ export class TradeService {
 			})
 				.populate({
 					path: "masterTradeId",
-					select: "baseAssetLogoUrl currentPrice -_id -__v",
+					select: "baseAssetLogoUrl currentPrice -_id",
 				})
 				.sort({ createdAt: -1 });
 
