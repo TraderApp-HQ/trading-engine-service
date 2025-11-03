@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/consistent-indexed-object-style */
-import axios from "axios";
+// import axios from "axios";
 import { config } from "dotenv";
 import { getAllCurrencies, getTradingPlatformData, insertTradingPlatformPairs } from "./helpers";
+import { bybitExchangeData, BybitSymbol } from "./bybitExchangeData";
 
 // load env variables
 config();
 
 export async function getBybitMarkets() {
 	// bybit api endpoint for spot trading pairs
-	const url = "https://api.bybit.com/v5/market/instruments-info?category=spot";
+	// const url = "https://api.bybit.com/v5/market/instruments-info?category=spot";
 
 	const symbols: { [k: string]: any } = {};
 
@@ -20,16 +21,16 @@ export async function getBybitMarkets() {
 		]);
 
 		// fetch from bybit api
-		const res = await axios({
-			method: "get",
-			url,
-		});
-		const result = res.data;
+		// const res = await axios({
+		// 	method: "get",
+		// 	url,
+		// });
+		// const result = res.data;
 
 		// loop through and get only active markets in our specified currencies. E.g USDT etc
 		Object.keys(currencies).forEach((currency: any) => {
 			const assets: any[] = [];
-			result.result?.list?.forEach((symbol: any) => {
+			bybitExchangeData.forEach((symbol: BybitSymbol) => {
 				// Check if trading is enabled and matches our currency
 				if (symbol.status === "Trading" && symbol.quoteCoin === currency) {
 					assets.push(symbol.baseCoin);

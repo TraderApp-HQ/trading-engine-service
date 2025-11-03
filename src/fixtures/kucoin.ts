@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/consistent-indexed-object-style */
-import axios from "axios";
+// import axios from "axios";
 import { config } from "dotenv";
 import { getAllCurrencies, getTradingPlatformData, insertTradingPlatformPairs } from "./helpers";
+import { kucoinExchangeData, KucoinSymbol } from "./kucoinExchangeData";
 
 // load env variables
 config();
 
 export async function getKucoinMarkets() {
 	// kucoin api endpoint
-	const url = "https://api.kucoin.com/api/v2/symbols";
+	// const url = "https://api.kucoin.com/api/v2/symbols";
 
 	const symbols: { [k: string]: any } = {};
 
@@ -20,16 +21,16 @@ export async function getKucoinMarkets() {
 		]);
 
 		// fetch from kucoin api
-		const res = await axios({
-			method: "get",
-			url,
-		});
-		const result = res.data;
+		// const res = await axios({
+		// 	method: "get",
+		// 	url,
+		// });
+		// const result = res.data;
 
 		// loop through and get only active markets in our speciefied currencies. E.g USDT etc
 		Object.keys(currencies).forEach((currency: any) => {
 			const assets: any[] = [];
-			result.data?.forEach((symbol: any) => {
+			kucoinExchangeData.forEach((symbol: KucoinSymbol) => {
 				if (symbol.enableTrading && symbol.quoteCurrency === currency) {
 					assets.push(symbol.baseCurrency);
 				}
