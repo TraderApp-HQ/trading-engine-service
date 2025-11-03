@@ -27,11 +27,11 @@ const secretNames = ["common-secrets", "trading-engine-service-secrets", "assets
 		secretsJson,
 	});
 
-	// const port = process.env.PORT;
-	// const dbUrl = process.env.TRADING_ENGINE_SERVICE_DB_URL ?? "";
+	const port = process.env.PORT;
+	const dbUrl = process.env.TRADING_ENGINE_SERVICE_DB_URL ?? "";
 
-	const port = 8081;
-	const dbUrl = "mongodb://localhost:27017/trading-service-db";
+	// const port = 8081;
+	// const dbUrl = "mongodb://localhost:27017/trading-service-db";
 	mongoose
 		.connect(dbUrl)
 		.then(() => {
