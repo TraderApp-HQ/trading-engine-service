@@ -87,7 +87,7 @@ class BinanceAccountService extends BaseTradingAccount {
 			? "https://testnet.binancefuture.com"
 			: "https://fapi.binance.com";
 
-		// Only include futures endpoint in test mode
+		// Include only futures endpoint in test mode
 		const endpoints = isTestModeEnabled
 			? [`${futuresEndpoint}/fapi/v3/balance?${queryString}&signature=${signature}`]
 			: [

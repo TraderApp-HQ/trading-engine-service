@@ -50,6 +50,7 @@ describe("TradeService", () => {
 					side: TradeSide.LONG,
 					status: TradeStatus.ACTIVE,
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
+					defaultTradingPlatform: TradingPlatform.BINANCE,
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -70,6 +71,7 @@ describe("TradeService", () => {
 					side: TradeSide.LONG,
 					status: TradeStatus.PENDING,
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
+					defaultTradingPlatform: TradingPlatform.BINANCE,
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -90,6 +92,7 @@ describe("TradeService", () => {
 					side: TradeSide.SHORT,
 					status: TradeStatus.CLOSED,
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
+					defaultTradingPlatform: TradingPlatform.BINANCE,
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -108,9 +111,9 @@ describe("TradeService", () => {
 		});
 	});
 
-	describe("createTrade", () => {
-		it("should successfully create a new trade", async () => {
-			const newTrade = {
+	describe("createMasterTrade", () => {
+		it("should successfully create a new master trades with different supported trading platforms", async () => {
+			const masterTradeInputOne: ICreateMasterTrade = {
 				baseAsset: "BTC",
 				baseAssetLogoUrl: "logo.png",
 				quoteCurrency: "USDT",
@@ -124,10 +127,12 @@ describe("TradeService", () => {
 				targetOrdersAmountToFill: 100,
 				pair: "BTCUSDT",
 				side: TradeSide.LONG,
-				pnl: 0,
-				pnlPercentage: 0,
 				status: TradeStatus.PENDING,
-				supportedTradingPlatforms: [TradingPlatform.BINANCE],
+				supportedTradingPlatforms: [
+					TradingPlatform.BINANCE,
+					TradingPlatform.BYBIT,
+					TradingPlatform.KUCOIN,
+				],
 				estimatedProfit: 0,
 				estimatedLoss: 0,
 				candlestick: CandleStick.fifteenMin,
@@ -135,21 +140,85 @@ describe("TradeService", () => {
 				category: Category.CRYPTO,
 			};
 
-			const createdTrade = await tradeService.createTrade(newTrade);
+			const masterTradeInputTwo: ICreateMasterTrade = {
+				baseAsset: "ETH",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "ETHUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.PENDING,
+				supportedTradingPlatforms: [TradingPlatform.BINANCE, TradingPlatform.KUCOIN],
+				estimatedProfit: 0,
+				estimatedLoss: 0,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			};
 
-			expect(createdTrade).toBeTruthy();
-			expect(createdTrade?.baseAsset).toBe("BTC");
-			expect(createdTrade?.pair).toBe("BTCUSDT");
-			expect(createdTrade?.status).toBe(TradeStatus.PENDING);
+			const masterTradeInputThree: ICreateMasterTrade = {
+				baseAsset: "BNB",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "BNBUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.PENDING,
+				supportedTradingPlatforms: [TradingPlatform.KUCOIN],
+				estimatedProfit: 0,
+				estimatedLoss: 0,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			};
+
+			const [createdMasterTradeOne, createdMasterTradeTwo, createdMasterTradeThree] =
+				await Promise.all([
+					tradeService.createMasterTrade(masterTradeInputOne),
+					tradeService.createMasterTrade(masterTradeInputTwo),
+					tradeService.createMasterTrade(masterTradeInputThree),
+				]);
+
+			expect(createdMasterTradeOne).toBeTruthy();
+			expect(createdMasterTradeOne?.baseAsset).toBe("BTC");
+			expect(createdMasterTradeOne?.pair).toBe("BTCUSDT");
+			expect(createdMasterTradeOne?.status).toBe(TradeStatus.PENDING);
+			expect(createdMasterTradeOne?.defaultTradingPlatform).toBe(TradingPlatform.BYBIT);
+
+			expect(createdMasterTradeTwo).toBeTruthy();
+			expect(createdMasterTradeTwo?.baseAsset).toBe("ETH");
+			expect(createdMasterTradeTwo?.pair).toBe("ETHUSDT");
+			expect(createdMasterTradeTwo?.status).toBe(TradeStatus.PENDING);
+			expect(createdMasterTradeTwo?.defaultTradingPlatform).toBe(TradingPlatform.BINANCE);
+
+			expect(createdMasterTradeThree).toBeTruthy();
+			expect(createdMasterTradeThree?.baseAsset).toBe("BNB");
+			expect(createdMasterTradeThree?.pair).toBe("BNBUSDT");
+			expect(createdMasterTradeThree?.status).toBe(TradeStatus.PENDING);
+			expect(createdMasterTradeThree?.defaultTradingPlatform).toBe(TradingPlatform.KUCOIN);
 		});
 
-		it("should throw error when required fields are missing", async () => {
-			const invalidTrade = {
+		it("should throw error when required fields are missing for master trade", async () => {
+			const invalidMasterTradeInput = {
 				baseAsset: "BTC",
 				// Missing required fields
 			} as unknown as ICreateMasterTrade;
 
-			await expect(tradeService.createTrade(invalidTrade)).rejects.toThrow();
+			await expect(tradeService.createMasterTrade(invalidMasterTradeInput)).rejects.toThrow();
 		});
 	});
 
@@ -175,6 +244,7 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 500, // (65000 - 60000) * 0.1 = 500
 					estimatedLoss: 200, // (60000 - 58000) * 0.1 = 200
+					defaultTradingPlatform: TradingPlatform.BINANCE,
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -220,6 +290,7 @@ describe("TradeService", () => {
 					side: TradeSide.LONG,
 					status: TradeStatus.ACTIVE,
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
+					defaultTradingPlatform: TradingPlatform.BINANCE,
 					estimatedProfit: 500,
 					estimatedLoss: 200, // (60000 - 58000) * 0.1 = 200
 					candlestick: CandleStick.fifteenMin,
@@ -269,6 +340,7 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 500, // (60000 - 55000) * 0.1 = 500
 					estimatedLoss: 200, // (62000 - 60000) * 0.1 = 200
+					defaultTradingPlatform: TradingPlatform.BINANCE,
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -316,6 +388,7 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 500,
 					estimatedLoss: 200, // (62000 - 60000) * 0.1 = 200
+					defaultTradingPlatform: TradingPlatform.BINANCE,
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -371,6 +444,7 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					defaultTradingPlatform: TradingPlatform.BINANCE,
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -425,6 +499,7 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					defaultTradingPlatform: TradingPlatform.BINANCE,
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -471,6 +546,7 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					defaultTradingPlatform: TradingPlatform.BINANCE,
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -515,6 +591,7 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					defaultTradingPlatform: TradingPlatform.BINANCE,
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -561,6 +638,7 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 0,
 					estimatedLoss: 0,
+					defaultTradingPlatform: TradingPlatform.BINANCE,
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -605,6 +683,7 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 500,
 					estimatedLoss: 200,
+					defaultTradingPlatform: TradingPlatform.BINANCE,
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -628,6 +707,7 @@ describe("TradeService", () => {
 					supportedTradingPlatforms: [TradingPlatform.BINANCE],
 					estimatedProfit: 200, // (3000 - 2800) * 1 = 200
 					estimatedLoss: 100, // (3100 - 3000) * 1 = 100
+					defaultTradingPlatform: TradingPlatform.BINANCE,
 					candlestick: CandleStick.fifteenMin,
 					risk: TradeRisk.low,
 					category: Category.CRYPTO,
@@ -717,6 +797,7 @@ describe("TradeService", () => {
 				supportedTradingPlatforms: [TradingPlatform.BINANCE],
 				estimatedProfit: 0,
 				estimatedLoss: 0,
+				defaultTradingPlatform: TradingPlatform.BINANCE,
 				candlestick: CandleStick.fifteenMin,
 				risk: TradeRisk.low,
 				category: Category.CRYPTO,
@@ -768,6 +849,7 @@ describe("TradeService", () => {
 				supportedTradingPlatforms: [TradingPlatform.BINANCE],
 				estimatedProfit: 0,
 				estimatedLoss: 0,
+				defaultTradingPlatform: TradingPlatform.BINANCE,
 				candlestick: CandleStick.fifteenMin,
 				risk: TradeRisk.low,
 				category: Category.CRYPTO,
@@ -816,6 +898,7 @@ describe("TradeService", () => {
 				supportedTradingPlatforms: [TradingPlatform.BINANCE],
 				estimatedProfit: 0,
 				estimatedLoss: 0,
+				defaultTradingPlatform: TradingPlatform.BINANCE,
 				candlestick: CandleStick.fifteenMin,
 				risk: TradeRisk.low,
 				category: Category.CRYPTO,
@@ -860,6 +943,7 @@ describe("TradeService", () => {
 				supportedTradingPlatforms: [TradingPlatform.BINANCE],
 				estimatedProfit: 0,
 				estimatedLoss: 0,
+				defaultTradingPlatform: TradingPlatform.BINANCE,
 				candlestick: CandleStick.fifteenMin,
 				risk: TradeRisk.low,
 				category: Category.CRYPTO,
@@ -904,6 +988,7 @@ describe("TradeService", () => {
 				supportedTradingPlatforms: [TradingPlatform.BINANCE],
 				estimatedProfit: 500,
 				estimatedLoss: 200,
+				defaultTradingPlatform: TradingPlatform.BINANCE,
 				candlestick: CandleStick.fifteenMin,
 				risk: TradeRisk.low,
 				category: Category.CRYPTO,

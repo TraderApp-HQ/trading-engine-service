@@ -1,6 +1,6 @@
 import { IOHLCData } from "../../clients/BinanceFuturesClient";
 import { publishMessageToQueue } from "../../clients/SQSClient/helpers";
-import { TradeSide, TradeStatus } from "../../config/enums";
+import { TradeSide, TradeStatus, TradingPlatform } from "../../config/enums";
 import { IProcessUserTradingWithMasterTradeEvent } from "../../config/interfaces";
 import { ICreateMasterTrade, IMasterTrade, MasterTrade } from "../../models/MasterTrade";
 import { IUserTrade, Trade } from "../../models/Trade";
@@ -72,9 +72,17 @@ export class TradeService {
 		}
 	}
 
-	public async createTrade(newTrade: ICreateMasterTrade): Promise<IMasterTrade | null> {
+	public async createMasterTrade(newTrade: ICreateMasterTrade): Promise<IMasterTrade | null> {
 		try {
-			const createdTrade = await MasterTrade.create(newTrade);
+			// If supported trading platforms includes BYBIT, set default trading platform to BYBIT, else if it includes BINANCE, set default trading platform to BINANCE, else set default trading platform to first supported trading platform
+			const defaultTradingPlatform = newTrade.supportedTradingPlatforms.includes(
+				TradingPlatform.BYBIT
+			)
+				? TradingPlatform.BYBIT
+				: newTrade.supportedTradingPlatforms.includes(TradingPlatform.BINANCE)
+				? TradingPlatform.BINANCE
+				: newTrade.supportedTradingPlatforms[0];
+			const createdTrade = await MasterTrade.create({ ...newTrade, defaultTradingPlatform });
 			return createdTrade;
 		} catch (error: unknown) {
 			if (error instanceof Error) {
@@ -305,6 +313,7 @@ export class TradeService {
 						targetOrdersAmountToFill: trade.targetOrdersAmountToFill,
 						orderPlacementType: trade.orderPlacementType,
 						accountType: trade.accountType,
+						baseAssetLogoUrl: trade.baseAssetLogoUrl,
 					};
 
 				// Publish master trade to queue and update trade status to ACTIVE

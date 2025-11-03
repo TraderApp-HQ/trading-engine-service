@@ -73,6 +73,7 @@ async function main() {
 	try {
 		console.log("Connecting to MongoDB...");
 		await mongoose.connect(tradingEngineServiceSecrets.TRADING_ENGINE_SERVICE_DB_URL);
+		// await mongoose.connect(process.env.TRADING_ENGINE_SERVICE_DB_URL ?? "");
 		console.log("Connected to MongoDB successfully.");
 	} catch (error: any) {
 		console.error("Error connecting to MongoDB: ", error.message);

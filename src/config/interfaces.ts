@@ -114,4 +114,5 @@ export interface IProcessUserTradingWithMasterTradeEvent {
 	targetOrdersAmountToFill: number;
 	orderPlacementType?: OrderPlacementType; // default is MARKET if not provided
 	accountType?: AccountType; // default is FUTURES if not provided
+	baseAssetLogoUrl?: string;
 }

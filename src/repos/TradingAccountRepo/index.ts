@@ -95,9 +95,9 @@ class TradingAccountRepository {
 	) {
 		const errorMessages = [];
 
-		if (input.isWithdrawalEnabled) {
-			errorMessages.push("Withdrawal is enabled");
-		}
+		// if (input.isWithdrawalEnabled) {
+		// 	errorMessages.push("Withdrawal is enabled");
+		// }
 
 		if (!input.isFuturesTradingEnabled) {
 			errorMessages.push("FUTURES trading is not enabled");
