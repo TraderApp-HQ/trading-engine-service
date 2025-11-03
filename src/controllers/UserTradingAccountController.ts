@@ -26,9 +26,9 @@ export const handleTradingAccountManualConnection = async (
 			platformName,
 			userId,
 			category,
-			apiKey,
-			apiSecret,
-			passphrase,
+			apiKey: apiKey?.trim(),
+			apiSecret: apiSecret?.trim(),
+			passphrase: passphrase?.trim(),
 			connectionType: ConnectionType.MANUAL,
 		});
 
