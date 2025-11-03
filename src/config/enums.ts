@@ -18,6 +18,13 @@ export enum Currency {
 export enum TradingPlatform {
 	BINANCE = "BINANCE",
 	KUCOIN = "KUCOIN",
+	BYBIT = "BYBIT",
+}
+
+export enum TradingPlatformSlug {
+	binance = "binance",
+	kucoin = "kucoin",
+	bybit = "bybit",
 }
 
 export enum Category {
@@ -117,4 +124,9 @@ export enum TradeRisk {
 	low = "LOW",
 	medium = "MEDIUM",
 	high = "HIGH",
+}
+
+export enum TradingPlatformStatus {
+	ACTIVE = "ACTIVE",
+	INACTIVE = "INACTIVE",
 }

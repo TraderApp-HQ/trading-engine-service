@@ -41,12 +41,19 @@ export interface IMasterTrade extends Document {
 	candlestick: CandleStick;
 	risk: TradeRisk;
 	category: Category;
+	defaultTradingPlatform: TradingPlatform;
 }
 
 export interface ICreateMasterTrade
 	extends Omit<
 		IMasterTrade,
-		"id" | "createdAt" | "updatedAt" | "pnl" | "pnlPercentage" | keyof Document
+		| "id"
+		| "createdAt"
+		| "updatedAt"
+		| "pnl"
+		| "pnlPercentage"
+		| "defaultTradingPlatform"
+		| keyof Document
 	> {}
 
 const MasterTradeSchema = new Schema<IMasterTrade>(
@@ -94,6 +101,11 @@ const MasterTradeSchema = new Schema<IMasterTrade>(
 		candlestick: { type: String, enum: Object.values(CandleStick), required: true },
 		risk: { type: String, enum: Object.values(TradeRisk), required: true },
 		category: { type: String, enum: Object.values(Category), required: true },
+		defaultTradingPlatform: {
+			type: String,
+			enum: Object.values(TradingPlatform),
+			required: true,
+		},
 	},
 	{ versionKey: false, timestamps: true }
 );

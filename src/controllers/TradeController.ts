@@ -111,12 +111,12 @@ export async function createMasterTradesHandler(req: Request, res: Response, nex
 			category: req.body.category,
 		};
 
-		const activeTrades = await tradeService.createTrade(newTrade);
+		const createdMasterTrade = await tradeService.createMasterTrade(newTrade);
 
 		res.status(HttpStatus.CREATED).json(
 			apiResponseHandler({
 				type: ResponseType.SUCCESS,
-				object: activeTrades,
+				object: createdMasterTrade,
 				message: "Trade created successfully.",
 			})
 		);
