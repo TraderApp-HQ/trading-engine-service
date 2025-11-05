@@ -99,6 +99,34 @@ export interface BybitUserInfo {
 	kycRegion: string;
 }
 
+export interface BybitOrderDetails {
+	orderId: string;
+	orderLinkId: string;
+	symbol: string;
+	side: string;
+	orderType: string;
+	qty: string;
+	price: string;
+	timeInForce: string;
+	reduceOnly: boolean;
+	closeOnTrigger: boolean;
+	stopLoss: string;
+	takeProfit: string;
+	triggerPrice: string;
+	cumExecQty: string;
+	cumExecValue: string;
+	cumExecFee: string;
+	avgPrice: string;
+	orderStatus: string;
+	updatedTime: string;
+	createdTime: string;
+}
+
+export interface BybitOrderListResponse {
+	list: BybitOrderDetails[];
+	nextPageCursor: string;
+}
+
 export interface IOHLCData {
 	symbol: string;
 	open: string;
@@ -433,77 +461,6 @@ export class BybitFuturesClient {
 	}
 
 	/**
-	 * Place stop loss order after checking if main order is filled
-	 */
-	async placeStopLossOrder({
-		symbol,
-		mainOrderSide,
-		stopLossPrice,
-		quantity,
-		positionIdx,
-	}: {
-		symbol: string;
-		mainOrderSide: BybitOrderSide;
-		stopLossPrice: string;
-		quantity: string;
-		positionIdx?: BybitPositionIdx;
-	}): Promise<BybitOrderResponse> {
-		try {
-			// For stop loss, we place an order in the opposite direction
-			const slSide: BybitOrderSide = mainOrderSide === "Buy" ? "Sell" : "Buy";
-
-			return await this.placeOrder({
-				symbol,
-				side: slSide,
-				orderType: "Market",
-				qty: quantity,
-				positionIdx: positionIdx ?? 0,
-				reduceOnly: true,
-				closeOnTrigger: true,
-			});
-		} catch (error: any) {
-			throw new Error(`Failed to place stop loss order: ${error.message}`);
-		}
-	}
-
-	/**
-	 * Place take profit orders after main position is opened
-	 */
-	async placeTakeProfitOrders({
-		symbol,
-		mainOrderSide,
-		targetProfits,
-		positionIdx,
-	}: {
-		symbol: string;
-		mainOrderSide: BybitOrderSide;
-		targetProfits: Array<{ price: string; quantity: string }>;
-		positionIdx?: BybitPositionIdx;
-	}): Promise<BybitOrderResponse[]> {
-		try {
-			// For take profit, we place orders in the opposite direction
-			const tpSide: BybitOrderSide = mainOrderSide === "Buy" ? "Sell" : "Buy";
-
-			const tpOrderPromises = targetProfits.map(async (tp) => {
-				return this.placeOrder({
-					symbol,
-					side: tpSide,
-					orderType: "Limit",
-					qty: tp.quantity,
-					price: tp.price,
-					positionIdx: positionIdx ?? 0,
-					reduceOnly: true,
-					timeInForce: "GTC",
-				});
-			});
-
-			return await Promise.all(tpOrderPromises);
-		} catch (error: any) {
-			throw new Error(`Failed to place take profit orders: ${error.message}`);
-		}
-	}
-
-	/**
 	 * Set stop loss and take profit for an existing position
 	 * This uses Bybit's position-level SL/TP feature
 	 */
@@ -536,63 +493,6 @@ export class BybitFuturesClient {
 			await this.makeRequest("POST", "/v5/position/trading-stop", params);
 		} catch (error: any) {
 			throw new Error(`Failed to set position SL/TP: ${error.message}`);
-		}
-	}
-
-	/**
-	 * Place a conditional order (stop order or take profit order with trigger)
-	 * This is different from the above - it places a new order that triggers at a price
-	 */
-	async placeConditionalOrder({
-		symbol,
-		side,
-		orderType,
-		qty,
-		price,
-		triggerPrice,
-		triggerBy = "LastPrice",
-		positionIdx,
-		reduceOnly,
-	}: {
-		symbol: string;
-		side: BybitOrderSide;
-		orderType: BybitOrderType;
-		qty: string;
-		price?: string;
-		triggerPrice: string;
-		triggerBy?: "LastPrice" | "IndexPrice" | "MarkPrice";
-		positionIdx?: BybitPositionIdx;
-		reduceOnly?: boolean;
-	}): Promise<BybitOrderResponse> {
-		try {
-			const orderParams: Record<string, any> = {
-				category: "linear",
-				symbol,
-				side,
-				orderType,
-				qty,
-				triggerPrice,
-				triggerBy,
-				positionIdx: positionIdx ?? 0,
-			};
-
-			if (price) {
-				orderParams.price = price;
-			}
-
-			if (orderType === "Market") {
-				orderParams.timeInForce = "IOC";
-			} else {
-				orderParams.timeInForce = "GTC";
-			}
-
-			if (reduceOnly !== undefined) {
-				orderParams.reduceOnly = reduceOnly;
-			}
-
-			return this.makeRequest<BybitOrderResponse>("POST", "/v5/order/create", orderParams);
-		} catch (error: any) {
-			throw new Error(`Failed to place conditional order: ${error.message}`);
 		}
 	}
 
@@ -650,6 +550,182 @@ export class BybitFuturesClient {
 			return results;
 		} catch (error: any) {
 			throw new Error(`Failed to fetch Bybit futures candles: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Get order by order ID or order link ID
+	 * Searches both open orders and order history
+	 */
+	async getOrderById({
+		symbol,
+		orderId,
+		orderLinkId,
+	}: {
+		symbol: string;
+		orderId?: string;
+		orderLinkId?: string;
+	}): Promise<BybitOrderDetails | null> {
+		try {
+			if (!orderId && !orderLinkId) {
+				throw new Error("Either orderId or orderLinkId must be provided");
+			}
+
+			// First check open orders
+			const openOrderParams: Record<string, any> = {
+				category: "linear",
+				symbol,
+			};
+
+			if (orderId) {
+				openOrderParams.orderId = orderId;
+			}
+			if (orderLinkId) {
+				openOrderParams.orderLinkId = orderLinkId;
+			}
+
+			const openOrders = await this.makeRequest<BybitOrderListResponse>(
+				"GET",
+				"/v5/order/realtime",
+				openOrderParams
+			);
+
+			if (openOrders.list && openOrders.list.length > 0) {
+				return openOrders.list[0];
+			}
+
+			// If not found in open orders, check order history
+			const historyParams: Record<string, any> = {
+				category: "linear",
+				symbol,
+			};
+
+			if (orderId) {
+				historyParams.orderId = orderId;
+			}
+			if (orderLinkId) {
+				historyParams.orderLinkId = orderLinkId;
+			}
+
+			const orderHistory = await this.makeRequest<BybitOrderListResponse>(
+				"GET",
+				"/v5/order/history",
+				historyParams
+			);
+
+			if (orderHistory.list && orderHistory.list.length > 0) {
+				return orderHistory.list[0];
+			}
+
+			return null;
+		} catch (error: any) {
+			throw new Error(`Failed to get order: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Get all open orders for a symbol
+	 */
+	async getOpenOrders(symbol?: string): Promise<BybitOrderDetails[]> {
+		try {
+			const params: Record<string, any> = {
+				category: "linear",
+			};
+
+			if (symbol) {
+				params.symbol = symbol;
+			}
+
+			const result = await this.makeRequest<BybitOrderListResponse>(
+				"GET",
+				"/v5/order/realtime",
+				params
+			);
+
+			return result.list || [];
+		} catch (error: any) {
+			throw new Error(`Failed to get open orders: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Get order history for a symbol
+	 */
+	async getOrderHistory({
+		symbol,
+		limit = 50,
+	}: {
+		symbol?: string;
+		limit?: number;
+	}): Promise<BybitOrderDetails[]> {
+		try {
+			const params: Record<string, any> = {
+				category: "linear",
+				limit,
+			};
+
+			if (symbol) {
+				params.symbol = symbol;
+			}
+
+			const result = await this.makeRequest<BybitOrderListResponse>(
+				"GET",
+				"/v5/order/history",
+				params
+			);
+
+			return result.list || [];
+		} catch (error: any) {
+			throw new Error(`Failed to get order history: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Cancel an order by order ID or order link ID
+	 */
+	async cancelOrder({
+		symbol,
+		orderId,
+		orderLinkId,
+	}: {
+		symbol: string;
+		orderId?: string;
+		orderLinkId?: string;
+	}): Promise<BybitOrderResponse> {
+		try {
+			if (!orderId && !orderLinkId) {
+				throw new Error("Either orderId or orderLinkId must be provided");
+			}
+
+			const params: Record<string, any> = {
+				category: "linear",
+				symbol,
+			};
+
+			if (orderId) {
+				params.orderId = orderId;
+			}
+			if (orderLinkId) {
+				params.orderLinkId = orderLinkId;
+			}
+
+			return this.makeRequest<BybitOrderResponse>("POST", "/v5/order/cancel", params);
+		} catch (error: any) {
+			throw new Error(`Failed to cancel order: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Cancel all open orders for a symbol
+	 */
+	async cancelAllOrders(symbol: string): Promise<void> {
+		try {
+			await this.makeRequest("POST", "/v5/order/cancel-all", {
+				category: "linear",
+				symbol,
+			});
+		} catch (error: any) {
+			throw new Error(`Failed to cancel all orders: ${error.message}`);
 		}
 	}
 }
