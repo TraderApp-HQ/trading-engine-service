@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { TradeSide, TradeStatus } from "../config/enums";
+import { TradeSide, TradeStatus, TradingPlatform } from "../config/enums";
 
 export interface ITrade extends Document {
 	id: string;
@@ -19,6 +19,7 @@ export interface ITrade extends Document {
 	estimatedProfit: number;
 	estimatedLoss: number;
 	status: TradeStatus;
+	platformName?: TradingPlatform;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -46,6 +47,7 @@ const TradeSchema = new Schema<ITrade>(
 		estimatedProfit: { type: Number, default: 0 },
 		estimatedLoss: { type: Number, default: 0 },
 		status: { type: String, enum: Object.values(TradeStatus), required: true },
+		platformName: { type: String, enum: Object.values(TradingPlatform) },
 	},
 	{ versionKey: false, timestamps: true }
 );
