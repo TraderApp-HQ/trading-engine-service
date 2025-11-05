@@ -1,11 +1,169 @@
+import { SortOrder } from "mongoose";
 import { IOHLCData } from "../../clients/BinanceFuturesClient";
 import { publishMessageToQueue } from "../../clients/SQSClient/helpers";
-import { TradeSide, TradeStatus, TradingPlatform } from "../../config/enums";
-import { IProcessUserTradingWithMasterTradeEvent } from "../../config/interfaces";
+import { TradeSide, TradeStatus, TradingPlatform as TradingPlatformEnum } from "../../config/enums";
+import {
+	IGetAllTradeAssetParams,
+	IGetAllTradingPlatformQuery,
+	IGetAllTradingPlatformsParam,
+	IGetSupportedTradingPlatforms,
+	IProcessUserTradingWithMasterTradeEvent,
+	ISupportedTradingPlatform,
+} from "../../config/interfaces";
+import Asset, { IAsset } from "../../models/Asset";
 import { ICreateMasterTrade, IMasterTrade, MasterTrade } from "../../models/MasterTrade";
 import { IUserTrade, Trade } from "../../models/Trade";
+import Currency, { ICurrency } from "../../models/Currency";
+import TradingPlatformPair from "../../models/TradingPlatformPair";
+import TradingPlatform, { ITradingPlatform } from "../../models/TradingPlatform";
 
 export class TradeService {
+	public async getAllTradeAssets({
+		category,
+		page,
+		rowsPerPage,
+		orderBy,
+		sortBy,
+	}: IGetAllTradeAssetParams): Promise<IAsset[] | null> {
+		try {
+			const offset = (page - 1) * rowsPerPage;
+
+			// Construct the dynamic sorting object
+			const sortOptions: Record<string, SortOrder> = {};
+			sortOptions[sortBy] = orderBy === "asc" ? 1 : -1;
+
+			const exchanges = await Asset.find({
+				isTradingActive: true,
+				isCoinActive: true,
+				category,
+			})
+				.sort(sortOptions)
+				.skip(offset)
+				.limit(rowsPerPage)
+				.select({
+					id: 1,
+					name: 1,
+					symbol: 1,
+					rank: 1,
+					logo: 1,
+					dateLaunched: 1,
+					urls: 1,
+				});
+
+			if (!exchanges) {
+				return null;
+			}
+
+			return exchanges;
+		} catch (error) {
+			if (error instanceof Error) {
+				throw new Error(error.message);
+			}
+			throw new Error("An unknown error occurred while retrieving trade assets.");
+		}
+	}
+
+	public async getSupportedCurrencies(): Promise<ICurrency[] | null> {
+		try {
+			const currencies = await Currency.find({}).where({ isTradingActive: true }).select({
+				id: 1,
+				name: 1,
+				symbol: 1,
+				logo: 1,
+			});
+
+			if (!currencies || currencies.length === 0) {
+				return null;
+			}
+
+			return currencies;
+		} catch (error) {
+			if (error instanceof Error) {
+				throw new Error(error.message);
+			}
+			throw new Error("An unknown error occurred while retrieving supported currencies.");
+		}
+	}
+
+	public async getSupportedTradingPlatforms({
+		baseAssetId,
+		quoteCurrencyId,
+	}: IGetSupportedTradingPlatforms): Promise<ISupportedTradingPlatform[] | null> {
+		try {
+			// find and return trading platforms where assetId and currencyId match
+			const platforms = await TradingPlatformPair.find({
+				assetId: baseAssetId,
+				currencyId: quoteCurrencyId,
+			})
+				.populate({
+					path: "platformId", // Populate the exchange details using exchangeId
+					match: { status: TradeStatus.ACTIVE },
+					select: "id name logo",
+				})
+				.sort({ name: 1 });
+
+			// Filter out exchange pairs where exchangeId is null (i.e., inactive exchanges)
+			const activePlatforms = platforms.filter((platform) => platform.platformId !== null);
+
+			if (!activePlatforms || activePlatforms.length === 0) {
+				return null;
+			}
+
+			const formattedPlatforms: ISupportedTradingPlatform[] = activePlatforms.map(
+				(platform: any) => ({
+					_id: platform.platformId._id,
+					logo: platform.platformId.logo,
+					name: platform.platformId.name,
+				})
+			);
+
+			return formattedPlatforms;
+		} catch (error: any) {
+			if (error instanceof Error) {
+				throw new Error(error.message);
+			}
+			throw new Error(
+				"An unknown error occurred while retrieving supported trading platforms."
+			);
+		}
+	}
+
+	public async getAllAccountTradingPlatforms({
+		page,
+		rowsPerPage,
+		orderBy,
+		status,
+	}: IGetAllTradingPlatformsParam): Promise<ITradingPlatform[] | null> {
+		try {
+			const offset = (page - 1) * rowsPerPage;
+
+			// Create the query object
+			const query: IGetAllTradingPlatformQuery = {};
+			if (status) {
+				query.status = status;
+			}
+
+			// Fetch the trading platforms based on the query
+			const tardingPlatforms = await TradingPlatform.find(query)
+				.sort({ name: orderBy === "asc" ? 1 : -1 })
+				.skip(offset)
+				.limit(rowsPerPage);
+
+			if (!tardingPlatforms || tardingPlatforms.length === 0) {
+				return null;
+			}
+
+			return tardingPlatforms;
+		} catch (error: any) {
+			if (error instanceof Error) {
+				throw new Error(error.message);
+			}
+			throw new Error(
+				"An unknown error occurred while retrieving supported trading platforms."
+			);
+		}
+	}
+
 	public async getActiveMasterTrades(): Promise<IMasterTrade[]> {
 		return MasterTrade.find({
 			status: {
@@ -76,11 +234,11 @@ export class TradeService {
 		try {
 			// If supported trading platforms includes BYBIT, set default trading platform to BYBIT, else if it includes BINANCE, set default trading platform to BINANCE, else set default trading platform to first supported trading platform
 			const defaultTradingPlatform = newTrade.supportedTradingPlatforms.includes(
-				TradingPlatform.BYBIT
+				TradingPlatformEnum.BYBIT
 			)
-				? TradingPlatform.BYBIT
-				: newTrade.supportedTradingPlatforms.includes(TradingPlatform.BINANCE)
-				? TradingPlatform.BINANCE
+				? TradingPlatformEnum.BYBIT
+				: newTrade.supportedTradingPlatforms.includes(TradingPlatformEnum.BINANCE)
+				? TradingPlatformEnum.BINANCE
 				: newTrade.supportedTradingPlatforms[0];
 			const createdTrade = await MasterTrade.create({ ...newTrade, defaultTradingPlatform });
 			return createdTrade;
