@@ -309,6 +309,7 @@ export class TradeService {
 						quoteCurrency: trade.quoteCurrency,
 						pair: trade.pair,
 						supportedTradingPlatforms: trade.supportedTradingPlatforms,
+						defaultTradingPlatform: trade.defaultTradingPlatform,
 						tradeSide: trade.side,
 						targetOrdersAmountToFill: trade.targetOrdersAmountToFill,
 						orderPlacementType: trade.orderPlacementType,

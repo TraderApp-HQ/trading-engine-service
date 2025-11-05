@@ -110,6 +110,7 @@ export interface IProcessUserTradingWithMasterTradeEvent {
 	quoteCurrency: string;
 	pair: string;
 	supportedTradingPlatforms: TradingPlatform[];
+	defaultTradingPlatform: TradingPlatform;
 	tradeSide: TradeSide;
 	targetOrdersAmountToFill: number;
 	orderPlacementType?: OrderPlacementType; // default is MARKET if not provided
