@@ -99,14 +99,14 @@ describe("TradeService", () => {
 				},
 			]);
 
-			const trades = await tradeService.getActiveMasterTrades();
+			const { trades } = await tradeService.getActiveMasterTrades();
 
 			expect(trades).toHaveLength(2);
 			expect(trades.some((t) => t.status === TradeStatus.CLOSED)).toBe(false);
 		});
 
 		it("should return empty array when no active trades exist", async () => {
-			const trades = await tradeService.getActiveMasterTrades();
+			const { trades } = await tradeService.getActiveMasterTrades();
 			expect(trades).toEqual([]);
 		});
 	});
