@@ -14,7 +14,7 @@ export const bybitFuturesPairCandlesJob = () => {
 				environment: process.env.NODE_ENV === "production" ? "mainnet" : "demo",
 			});
 
-			const trades = await tradeService.getActiveMasterTrades();
+			const { trades } = await tradeService.getActiveMasterTrades();
 			const bybitSupportedTrades = trades.filter(
 				(trade) => trade.defaultTradingPlatform === TradingPlatform.BYBIT
 			);

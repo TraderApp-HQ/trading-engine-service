@@ -13,7 +13,7 @@ export const binanceFuturesPairCandlesJob = () => {
 				process.env.BINANCE_FUTURES_API_SECRET || ""
 			);
 
-			const trades = await tradeService.getActiveMasterTrades();
+			const { trades } = await tradeService.getActiveMasterTrades();
 			const binanceSupportedTrades = trades.filter(
 				(trade) => trade.defaultTradingPlatform === TradingPlatform.BINANCE
 			);
