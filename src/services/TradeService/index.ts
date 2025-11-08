@@ -59,7 +59,7 @@ export class TradeService {
 			})
 				.populate({
 					path: "masterTradeId",
-					select: "baseAssetLogoUrl currentPrice -_id",
+					select: "baseAssetLogoUrl currentPrice _id",
 				})
 				.sort({ createdAt: -1 })
 				.lean();
@@ -84,6 +84,7 @@ export class TradeService {
 
 				const userTrade: IUserTrade = {
 					...trade,
+					masterTradeId: trade.masterTradeId?._id.toString(),
 					baseAssetLogoUrl: trade.masterTradeId?.baseAssetLogoUrl,
 					currentPrice: trade.masterTradeId?.currentPrice,
 					pnl: pnlAmount,
