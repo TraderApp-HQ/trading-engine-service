@@ -1,13 +1,16 @@
 import { IOHLCData } from "../../clients/BinanceFuturesClient";
 import { publishMessageToQueue } from "../../clients/SQSClient/helpers";
 import { TradeSide, TradeStatus, TradingPlatform } from "../../config/enums";
-import { IProcessUserTradingWithMasterTradeEvent } from "../../config/interfaces";
+import { IProcessUserTradingWithMasterTradeEvent, ITradeAggregate } from "../../config/interfaces";
 import { ICreateMasterTrade, IMasterTrade, MasterTrade } from "../../models/MasterTrade";
 import { IUserTrade, Trade } from "../../models/Trade";
 
 export class TradeService {
-	public async getActiveMasterTrades(): Promise<IMasterTrade[]> {
-		return MasterTrade.find({
+	public async getActiveMasterTrades(): Promise<{
+		trades: IMasterTrade[];
+		tradesAggregate: ITradeAggregate;
+	}> {
+		const trades = await MasterTrade.find({
 			status: {
 				$in: [
 					TradeStatus.ACTIVE,
@@ -17,9 +20,31 @@ export class TradeService {
 				],
 			},
 		}).sort({ createdAt: -1 });
+
+		const { totalBalance, totalRisk } = trades.reduce(
+			(acc, trade) => ({
+				totalBalance: acc.totalBalance + trade.pnl,
+				totalRisk: acc.totalRisk + trade.estimatedLoss,
+			}),
+			{
+				totalBalance: 0,
+				totalRisk: 0,
+			}
+		);
+
+		const tradesAggregate = this.calculateTradesAggregate({ totalBalance, totalRisk });
+
+		return {
+			trades,
+			tradesAggregate,
+		};
 	}
 
-	public async getUserActiveTrades({ userId }: { userId: string }): Promise<IUserTrade[]> {
+	public async getUserActiveTrades({
+		userId,
+	}: {
+		userId: string;
+	}): Promise<{ trades: IUserTrade[]; tradesAggregate: ITradeAggregate }> {
 		try {
 			const trades = await Trade.find({
 				userId,
@@ -36,18 +61,44 @@ export class TradeService {
 					path: "masterTradeId",
 					select: "baseAssetLogoUrl currentPrice -_id",
 				})
-				.sort({ createdAt: -1 });
+				.sort({ createdAt: -1 })
+				.lean();
+
+			// Calculate aggregate values during mapping to avoid second iteration
+			let totalBalance = 0;
+			let totalRisk = 0;
 
 			const userTrades = trades.map((trade: any) => {
-				const tradeObj = trade.toObject();
-				return {
-					...tradeObj,
-					baseAssetLogoUrl: tradeObj.masterTradeId?.baseAssetLogoUrl,
-					currentPrice: tradeObj.masterTradeId?.currentPrice,
+				const { pnlAmount, pnlPercentOfRisk } = this.calculatePnL({
+					side: trade.side,
+					entryPrice: trade.entryPrice,
+					baseQuantity: trade.baseQuantity,
+					targetPrice: trade.takeProfitPrice,
+					riskUSDT: trade.estimatedLoss,
+					requiredMargin: trade.quoteTotal,
+				});
+
+				// Accumulate for aggregate calculation
+				totalBalance += pnlAmount || 0;
+				totalRisk += trade.estimatedLoss || 0;
+
+				const userTrade: IUserTrade = {
+					...trade,
+					baseAssetLogoUrl: trade.masterTradeId?.baseAssetLogoUrl,
+					currentPrice: trade.masterTradeId?.currentPrice,
+					pnl: pnlAmount,
+					pnlPercentage: pnlPercentOfRisk,
 				};
+
+				return userTrade;
 			});
 
-			return userTrades as IUserTrade[];
+			const tradesAggregate = this.calculateTradesAggregate({ totalBalance, totalRisk });
+
+			return {
+				trades: userTrades,
+				tradesAggregate,
+			};
 		} catch (error) {
 			if (error instanceof Error) {
 				throw new Error(error.message);
@@ -90,6 +141,33 @@ export class TradeService {
 			}
 			throw new Error("An unknown error occurred while creating trade.");
 		}
+	}
+
+	private calculateTradesAggregate({
+		totalBalance,
+		totalRisk,
+	}: {
+		totalBalance: number;
+		totalRisk: number;
+	}): ITradeAggregate {
+		const accummulatedUnrealisedPnL = Number((totalBalance - totalRisk).toFixed(2));
+
+		// If totalRisk is zero and accumulatedUnrealisedPnL is positive, use 1 as denominator to convert to percentage
+		const accummulatedUnrealisedPnLPercentage = Number(
+			(totalRisk === 0 && accummulatedUnrealisedPnL > 0
+				? accummulatedUnrealisedPnL * 100
+				: totalRisk === 0
+				? 0
+				: (accummulatedUnrealisedPnL / totalRisk) * 100
+			).toFixed(2)
+		); // Otherwise use normal percentage calculation
+
+		return {
+			accummulatedTotalBalance: totalBalance,
+			accummulatedTotalRisk: totalRisk,
+			accummulatedUnrealisedPnL,
+			accummulatedUnrealisedPnLPercentage,
+		};
 	}
 
 	public calculatePnL({

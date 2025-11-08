@@ -117,3 +117,10 @@ export interface IProcessUserTradingWithMasterTradeEvent {
 	accountType?: AccountType; // default is FUTURES if not provided
 	baseAssetLogoUrl?: string;
 }
+
+export interface ITradeAggregate {
+	accummulatedTotalBalance: number;
+	accummulatedTotalRisk: number;
+	accummulatedUnrealisedPnL: number;
+	accummulatedUnrealisedPnLPercentage: number;
+}
