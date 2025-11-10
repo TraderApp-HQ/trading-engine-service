@@ -59,7 +59,7 @@ export class TradeService {
 			})
 				.populate({
 					path: "masterTradeId",
-					select: "baseAssetLogoUrl currentPrice -_id",
+					select: "baseAssetLogoUrl currentPrice _id",
 				})
 				.sort({ createdAt: -1 })
 				.lean();
@@ -73,7 +73,7 @@ export class TradeService {
 					side: trade.side,
 					entryPrice: trade.entryPrice,
 					baseQuantity: trade.baseQuantity,
-					targetPrice: trade.takeProfitPrice,
+					targetPrice: trade.masterTradeId?.currentPrice,
 					riskUSDT: trade.estimatedLoss,
 					requiredMargin: trade.quoteTotal,
 				});
@@ -84,6 +84,7 @@ export class TradeService {
 
 				const userTrade: IUserTrade = {
 					...trade,
+					masterTradeId: trade.masterTradeId?._id.toString(),
 					baseAssetLogoUrl: trade.masterTradeId?.baseAssetLogoUrl,
 					currentPrice: trade.masterTradeId?.currentPrice,
 					pnl: pnlAmount,
@@ -150,21 +151,16 @@ export class TradeService {
 		totalBalance: number;
 		totalRisk: number;
 	}): ITradeAggregate {
-		const accummulatedUnrealisedPnL = Number((totalBalance - totalRisk).toFixed(2));
+		const accummulatedUnrealisedPnL = Number(totalBalance.toFixed(2));
 
-		// If totalRisk is zero and accumulatedUnrealisedPnL is positive, use 1 as denominator to convert to percentage
+		// If totalRisk is zero, use 1 as denominator to convert to percentage
 		const accummulatedUnrealisedPnLPercentage = Number(
-			(totalRisk === 0 && accummulatedUnrealisedPnL > 0
-				? accummulatedUnrealisedPnL * 100
-				: totalRisk === 0
-				? 0
-				: (accummulatedUnrealisedPnL / totalRisk) * 100
-			).toFixed(2)
-		); // Otherwise use normal percentage calculation
+			((accummulatedUnrealisedPnL / (totalRisk === 0 ? 1 : totalRisk)) * 100).toFixed(2)
+		);
 
 		return {
-			accummulatedTotalBalance: totalBalance,
-			accummulatedTotalRisk: totalRisk,
+			accummulatedTotalBalance: Number(totalBalance.toFixed(2)),
+			accummulatedTotalRisk: Number(totalRisk.toFixed(2)),
 			accummulatedUnrealisedPnL,
 			accummulatedUnrealisedPnLPercentage,
 		};
