@@ -1,3 +1,4 @@
+import { IAsset } from "../models/Asset";
 import { IUserTradingAccount } from "../models/UserTradingAccount";
 import { IUserTradingAccountBalance } from "../models/UserTradingAccountBalance";
 import {
@@ -7,6 +8,7 @@ import {
 	Currency,
 	OrderPlacementType,
 	TradingPlatform,
+	TradingPlatformStatus,
 	TradingRuleCategory,
 	TradingRuleType,
 	UserRoles,
@@ -118,6 +120,45 @@ export interface IProcessUserTradingWithMasterTradeEvent {
 	baseAssetLogoUrl?: string;
 }
 
+export interface IGetAllTradeAssetParams {
+	page: number;
+	rowsPerPage: number;
+	orderBy: "asc" | "desc";
+	sortBy: string;
+	category: Category;
+}
+
+export interface IPagedResultData {
+	currentPage: number;
+	itemsCount: number;
+	pageCount: number;
+	rowsPerPage: number;
+	sortBy: string;
+	orderBy: string;
+	assets: IAsset[];
+}
+
+export interface IGetSupportedTradingPlatforms {
+	baseAssetId: number;
+	quoteCurrencyId: number;
+}
+
+export interface ISupportedTradingPlatform {
+	_id: string;
+	logo: string;
+	name: string;
+}
+
+export interface IGetAllTradingPlatformsParam {
+	page: number;
+	rowsPerPage: number;
+	orderBy: "asc" | "desc";
+	status?: TradingPlatformStatus;
+}
+
+export interface IGetAllTradingPlatformQuery {
+	status?: TradingPlatformStatus;
+}
 export interface ITradeAggregate {
 	accummulatedTotalBalance: number;
 	accummulatedTotalRisk: number;
