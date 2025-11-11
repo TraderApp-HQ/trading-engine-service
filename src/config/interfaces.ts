@@ -112,6 +112,7 @@ export interface IProcessUserTradingWithMasterTradeEvent {
 	quoteCurrency: string;
 	pair: string;
 	supportedTradingPlatforms: TradingPlatform[];
+	defaultTradingPlatform: TradingPlatform;
 	tradeSide: TradeSide;
 	targetOrdersAmountToFill: number;
 	orderPlacementType?: OrderPlacementType; // default is MARKET if not provided
@@ -157,4 +158,10 @@ export interface IGetAllTradingPlatformsParam {
 
 export interface IGetAllTradingPlatformQuery {
 	status?: TradingPlatformStatus;
+}
+export interface ITradeAggregate {
+	accummulatedTotalBalance: number;
+	accummulatedTotalRisk: number;
+	accummulatedUnrealisedPnL: number;
+	accummulatedUnrealisedPnLPercentage: number;
 }

@@ -39,8 +39,8 @@ import { BybitFuturesClient } from "./clients/BybitFuturesClient";
 		// console.log("\n========== 2. Place Market Order ==========");
 		// const marketOrder = await client.placeMarketOrder({
 		// 	symbol: "BTCUSDT",
-		// 	side: "Sell",
-		// 	qty: "0.001",
+		// 	side: "Buy",
+		// 	qty: "0.01",
 		// 	leverage: 60,
 		// });
 		// console.log("Market Order Response:", marketOrder);
@@ -113,40 +113,45 @@ import { BybitFuturesClient } from "./clients/BybitFuturesClient";
 		// });
 		// console.log("Close Order:", closeOrder);
 
-		// Method 1: Simple SL/TP orders (like Binance)
-		await client.placeStopLossOrder({
-			symbol: "BTCUSDT",
-			mainOrderSide: "Sell",
-			stopLossPrice: "106000",
-			quantity: "0.01",
-		});
-
-		// await client.placeTakeProfitOrders({
-		// 	symbol: "BTCUSDT",
-		// 	mainOrderSide: "Buy",
-		// 	targetProfits: [
-		// 		{ price: "62000", quantity: "0.05" },
-		// 		{ price: "65000", quantity: "0.05" },
-		// 	],
-		// });
-
 		// // Method 2: Position-level SL/TP (recommended for Bybit)
 		// await client.setPositionStopLossTakeProfit({
 		// 	symbol: "BTCUSDT",
-		// 	stopLoss: "58000",
-		// 	takeProfit: "65000",
+		// 	stopLoss: "105500",
+		// 	takeProfit: "111000",
 		// });
+		// console.log("Set Position Stop Loss Take Profit");
 
-		// // Method 3: Advanced conditional orders
-		// await client.placeConditionalOrder({
+		// Get order by order ID
+		const order = await client.getOrderById({
+			symbol: "BTCUSDT",
+			orderId: "2cb82ee5-0edd-4899-b2c3-00d3d4d9f230",
+		});
+		console.log("Order", { order });
+
+		// // Get order by custom order link ID
+		// const order2 = await client.getOrderById({
 		// 	symbol: "BTCUSDT",
-		// 	side: "Sell",
-		// 	orderType: "Market",
-		// 	qty: "0.1",
-		// 	triggerPrice: "58000",
-		// 	triggerBy: "LastPrice",
-		// 	reduceOnly: true,
+		// 	orderLinkId: "my-custom-id-123",
 		// });
+		// console.log("Order2", { order2 });
+		// // Get all open orders for a symbol
+		// const openOrders = await client.getOpenOrders("BTCUSDT");
+		// console.log("Open Orders", { openOrders });
+		// // Get order history
+		// const history = await client.getOrderHistory({
+		// 	symbol: "BTCUSDT",
+		// 	limit: 100,
+		// });
+		// console.log("History", { history });
+		// // Cancel an order
+		// await client.cancelOrder({
+		// 	symbol: "BTCUSDT",
+		// 	orderId: "1234567890",
+		// });
+		// console.log("Cancel Order");
+		// // Cancel all orders for a symbol
+		// await client.cancelAllOrders("BTCUSDT");
+		// console.log("Cancel All Orders");
 	} catch (error: any) {
 		console.error("\n❌ Error:", error.message);
 		console.error("Full error:", error);

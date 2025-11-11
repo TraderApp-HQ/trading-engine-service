@@ -9,6 +9,7 @@ import {
 	IGetSupportedTradingPlatforms,
 	IProcessUserTradingWithMasterTradeEvent,
 	ISupportedTradingPlatform,
+	ITradeAggregate,
 } from "../../config/interfaces";
 import Asset, { IAsset } from "../../models/Asset";
 import { ICreateMasterTrade, IMasterTrade, MasterTrade } from "../../models/MasterTrade";
@@ -164,8 +165,11 @@ export class TradeService {
 		}
 	}
 
-	public async getActiveMasterTrades(): Promise<IMasterTrade[]> {
-		return MasterTrade.find({
+	public async getActiveMasterTrades(): Promise<{
+		trades: IMasterTrade[];
+		tradesAggregate: ITradeAggregate;
+	}> {
+		const trades = await MasterTrade.find({
 			status: {
 				$in: [
 					TradeStatus.ACTIVE,
@@ -175,9 +179,31 @@ export class TradeService {
 				],
 			},
 		}).sort({ createdAt: -1 });
+
+		const { totalBalance, totalRisk } = trades.reduce(
+			(acc, trade) => ({
+				totalBalance: acc.totalBalance + trade.pnl,
+				totalRisk: acc.totalRisk + trade.estimatedLoss,
+			}),
+			{
+				totalBalance: 0,
+				totalRisk: 0,
+			}
+		);
+
+		const tradesAggregate = this.calculateTradesAggregate({ totalBalance, totalRisk });
+
+		return {
+			trades,
+			tradesAggregate,
+		};
 	}
 
-	public async getUserActiveTrades({ userId }: { userId: string }): Promise<IUserTrade[]> {
+	public async getUserActiveTrades({
+		userId,
+	}: {
+		userId: string;
+	}): Promise<{ trades: IUserTrade[]; tradesAggregate: ITradeAggregate }> {
 		try {
 			const trades = await Trade.find({
 				userId,
@@ -192,20 +218,47 @@ export class TradeService {
 			})
 				.populate({
 					path: "masterTradeId",
-					select: "baseAssetLogoUrl currentPrice -_id",
+					select: "baseAssetLogoUrl currentPrice _id",
 				})
-				.sort({ createdAt: -1 });
+				.sort({ createdAt: -1 })
+				.lean();
+
+			// Calculate aggregate values during mapping to avoid second iteration
+			let totalBalance = 0;
+			let totalRisk = 0;
 
 			const userTrades = trades.map((trade: any) => {
-				const tradeObj = trade.toObject();
-				return {
-					...tradeObj,
-					baseAssetLogoUrl: tradeObj.masterTradeId?.baseAssetLogoUrl,
-					currentPrice: tradeObj.masterTradeId?.currentPrice,
+				const { pnlAmount, pnlPercentOfRisk } = this.calculatePnL({
+					side: trade.side,
+					entryPrice: trade.entryPrice,
+					baseQuantity: trade.baseQuantity,
+					targetPrice: trade.masterTradeId?.currentPrice,
+					riskUSDT: trade.estimatedLoss,
+					requiredMargin: trade.quoteTotal,
+				});
+
+				// Accumulate for aggregate calculation
+				totalBalance += pnlAmount || 0;
+				totalRisk += trade.estimatedLoss || 0;
+
+				const userTrade: IUserTrade = {
+					...trade,
+					masterTradeId: trade.masterTradeId?._id.toString(),
+					baseAssetLogoUrl: trade.masterTradeId?.baseAssetLogoUrl,
+					currentPrice: trade.masterTradeId?.currentPrice,
+					pnl: pnlAmount,
+					pnlPercentage: pnlPercentOfRisk,
 				};
+
+				return userTrade;
 			});
 
-			return userTrades as IUserTrade[];
+			const tradesAggregate = this.calculateTradesAggregate({ totalBalance, totalRisk });
+
+			return {
+				trades: userTrades,
+				tradesAggregate,
+			};
 		} catch (error) {
 			if (error instanceof Error) {
 				throw new Error(error.message);
@@ -248,6 +301,28 @@ export class TradeService {
 			}
 			throw new Error("An unknown error occurred while creating trade.");
 		}
+	}
+
+	private calculateTradesAggregate({
+		totalBalance,
+		totalRisk,
+	}: {
+		totalBalance: number;
+		totalRisk: number;
+	}): ITradeAggregate {
+		const accummulatedUnrealisedPnL = Number(totalBalance.toFixed(2));
+
+		// If totalRisk is zero, use 1 as denominator to convert to percentage
+		const accummulatedUnrealisedPnLPercentage = Number(
+			((accummulatedUnrealisedPnL / (totalRisk === 0 ? 1 : totalRisk)) * 100).toFixed(2)
+		);
+
+		return {
+			accummulatedTotalBalance: Number(totalBalance.toFixed(2)),
+			accummulatedTotalRisk: Number(totalRisk.toFixed(2)),
+			accummulatedUnrealisedPnL,
+			accummulatedUnrealisedPnLPercentage,
+		};
 	}
 
 	public calculatePnL({
@@ -467,6 +542,7 @@ export class TradeService {
 						quoteCurrency: trade.quoteCurrency,
 						pair: trade.pair,
 						supportedTradingPlatforms: trade.supportedTradingPlatforms,
+						defaultTradingPlatform: trade.defaultTradingPlatform,
 						tradeSide: trade.side,
 						targetOrdersAmountToFill: trade.targetOrdersAmountToFill,
 						orderPlacementType: trade.orderPlacementType,
