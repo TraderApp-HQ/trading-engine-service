@@ -8,8 +8,9 @@ import secretsJson from "./env.json";
 import specs from "./utils/swagger";
 
 // import routes
-import { OrderRoutes, UserTradingAccountRoutes } from "./routes";
+import { OrderRoutes, UserTradingAccountRoutes, TradeRoutes } from "./routes";
 import mongoose from "mongoose";
+import runAllJobs from "./jobs";
 
 config();
 
@@ -17,7 +18,7 @@ const app: Application = express();
 
 const env = process.env.NODE_ENV || "development";
 const suffix = ENVIRONMENTS[env] || "dev";
-const secretNames = ["common-secrets", "trading-engine-service-secrets"];
+const secretNames = ["common-secrets", "trading-engine-service-secrets", "assets-service-secrets"];
 
 (async function () {
 	await initSecrets({
@@ -86,8 +87,8 @@ function startServer() {
 	app.use(cors(corsOptions));
 
 	// parse incoming requests
-	app.use(express.urlencoded({ extended: true }));
-	app.use(express.json());
+	app.use(express.urlencoded({ extended: true, limit: "8mb" }));
+	app.use(express.json({ limit: "8mb" }));
 
 	// documentation
 	app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
@@ -95,11 +96,15 @@ function startServer() {
 	// api routes
 	app.use(`/orders`, OrderRoutes);
 	app.use(`/account`, UserTradingAccountRoutes);
+	app.use(`/trade`, TradeRoutes);
 
 	// health check
 	app.get("/ping", (_req, res) => {
 		res.status(200).send({ message: `pong!!! Trading engine service ${env} server running!` });
 	});
+
+	// run all jobs
+	runAllJobs();
 
 	// handle errors
 	app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

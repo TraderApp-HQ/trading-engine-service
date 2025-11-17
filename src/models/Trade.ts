@@ -1,42 +1,53 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { TradeSide, TradeStatus } from "../config/enums";
+import { TradeSide, TradeStatus, TradingPlatform } from "../config/enums";
 
 export interface ITrade extends Document {
-	// tradeId: string;
-	// batchId: Types.ObjectId; // Reference to the Batch
 	id: string;
-	userId: string; // Should reference the User model
-	signalId: string;
+	userId: string;
+	masterTradeId: string;
 	baseAsset: string;
 	quoteCurrency: string;
 	baseQuantity: number;
-	avgBuyPrice: number;
 	quoteTotal: number;
+	entryPrice: number;
+	stopLossPrice: number;
+	takeProfitPrice: number;
 	pair: string;
 	side: TradeSide;
 	pnl: number;
+	pnlPercentage: number;
+	estimatedProfit: number;
+	estimatedLoss: number;
 	status: TradeStatus;
+	platformName?: TradingPlatform;
 	createdAt: Date;
 	updatedAt: Date;
 }
 
+export interface IUserTrade extends ITrade {
+	baseAssetLogoUrl: string;
+	currentPrice: number;
+}
+
 const TradeSchema = new Schema<ITrade>(
 	{
-		// tradeId: { type: String, unique: true, required: true },
-		// batchId: { type: Schema.Types.ObjectId, ref: "trade-batch", required: true },
 		userId: { type: String, required: true },
-		signalId: { type: String, required: true },
+		masterTradeId: { type: String, required: true, ref: "master-trade" },
 		baseAsset: { type: String, required: true },
 		baseQuantity: { type: Number, required: true },
-		avgBuyPrice: { type: Number, required: true },
+		entryPrice: { type: Number, required: true },
+		stopLossPrice: { type: Number, required: true },
+		takeProfitPrice: { type: Number },
 		quoteCurrency: { type: String, required: true },
 		quoteTotal: { type: Number, required: true },
 		pair: { type: String, required: true },
 		side: { type: String, enum: Object.values(TradeSide), required: true },
 		pnl: { type: Number, default: 0 },
+		pnlPercentage: { type: Number, default: 0 },
+		estimatedProfit: { type: Number, default: 0 },
+		estimatedLoss: { type: Number, default: 0 },
 		status: { type: String, enum: Object.values(TradeStatus), required: true },
-		// createdAt: { type: Date, default: Date.now },
-		// updatedAt: { type: Date, default: Date.now },
+		platformName: { type: String, enum: Object.values(TradingPlatform) },
 	},
 	{ versionKey: false, timestamps: true }
 );
@@ -52,8 +63,6 @@ TradeSchema.set("toJSON", {
 });
 
 TradeSchema.index({
-	// tradeId: 1,
-	// batchId: 1,
 	userId: 1,
 	signalId: 1,
 	baseAsset: 1,
@@ -63,6 +72,7 @@ TradeSchema.index({
 	status: 1,
 	createdAt: 1,
 	pnl: 1,
+	masterTradeId: 1,
 });
 
 export const Trade = mongoose.model<ITrade>("trade", TradeSchema);

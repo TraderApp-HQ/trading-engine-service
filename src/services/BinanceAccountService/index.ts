@@ -5,7 +5,7 @@ import { AccountType, Category, Currency } from "../../config/enums";
 import { BaseTradingAccount, ITradingAccountInput } from "../../factories/BaseTradingAccount";
 import { ITradingAccountInfo } from "../../factories/interfaces";
 import { ErrorMessage } from "../../config/constants";
-import { FeatureFlagManager } from "../../utils/helpers/SplitIOClient";
+import { FeatureFlagManager } from "../../clients/SplitIOClient";
 
 export interface IBinanceSpotAccountInfo {
 	uid: number;
@@ -87,7 +87,7 @@ class BinanceAccountService extends BaseTradingAccount {
 			? "https://testnet.binancefuture.com"
 			: "https://fapi.binance.com";
 
-		// Only include futures endpoint in test mode
+		// Include only futures endpoint in test mode
 		const endpoints = isTestModeEnabled
 			? [`${futuresEndpoint}/fapi/v3/balance?${queryString}&signature=${signature}`]
 			: [

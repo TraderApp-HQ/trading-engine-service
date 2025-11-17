@@ -2,6 +2,7 @@
 import { TradingPlatform } from "../../config/enums";
 import BinanceAccountService from "../../services/BinanceAccountService/index";
 import KucoinAccountService from "../../services/KucoinAccountService";
+import BybitAccountService from "../../services/BybitAccountService";
 import { ITradingAccountInput } from "../BaseTradingAccount";
 import { ITradingAccount } from "../interfaces";
 
@@ -13,6 +14,9 @@ class TradingAccountFactory {
 			}
 			case TradingPlatform.KUCOIN: {
 				return new KucoinAccountService(input);
+			}
+			case TradingPlatform.BYBIT: {
+				return new BybitAccountService(input);
 			}
 			default:
 				throw new Error("Unsupported trading platform");

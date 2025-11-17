@@ -393,20 +393,25 @@ export class BinanceFuturesService {
 (async function () {
 	// Example usage:
 	const tradingService = new BinanceFuturesService(
-		"bfd570406dbe408e2e143ad91adeb3063f352df801886b2adbd015c8a44f7d4b",
-		"94eb8fbb7dc7f40b6080b5a031b146b0843fc4a0066a865e5f090bb8bbb21b5f"
+		"B2kKxLsqPMonwKnkEktHL4tiGXCCylS6cQ2TsiEg4UX6DwEeZqSTQyPXDZYGYvn5",
+		"6B1zhAy2fr1FERcfldKx7QFIs8VJV6ZlYoEygvNKnrwCqzkg3ZNpQR3tAvPHOG3L"
 	);
 
 	// Place main order first
 	const mainOrder = await tradingService.placeTrade({
+		symbol: "BTCUSDT",
 		side: OrderSide.SELL,
-		quantity: 1,
-		type: "MARKET",
-		leverage: 8,
-		symbol: "ETHUSDT",
+		quantity: 0.33,
+		type: "LIMIT",
+		leverage: 100,
+		price: 121586,
 		// positionSide: PositionSide.LONG,
-		// marginType: "CROSSED",
+		marginType: "CROSSED",
 	});
+
+	// qty: 0.3335
+	// posSize: 40555.7
+	// reqMargin: 405.557
 
 	console.log("============ Main order placed ==========", { mainOrder });
 
@@ -416,13 +421,9 @@ export class BinanceFuturesService {
 			// Place target profit orders
 			const targetProfitOrders = await tradingService.placeTargetProfitOrders({
 				origClientOrderId: mainOrder.clientOrderId,
-				symbol: "ETHUSDT",
+				symbol: "BTCUSDT",
 				mainOrderSide: OrderSide.SELL,
-				targetProfits: [
-					{ price: 2350, percent: 30 },
-					{ price: 2300, percent: 35 },
-					{ price: 2250, percent: 30 },
-				],
+				targetProfits: [{ price: 120071, percent: 100 }],
 			});
 			console.log("============ Target profit orders placed ==========", {
 				targetProfitOrders,
@@ -431,9 +432,9 @@ export class BinanceFuturesService {
 			// Place stop loss order
 			const stopLossOrder = await tradingService.placeStopLossOrder({
 				origClientOrderId: mainOrder.clientOrderId,
-				symbol: "ETHUSDT",
+				symbol: "BTCUSDT",
 				mainOrderSide: OrderSide.SELL,
-				stopLoss: { price: 2500 },
+				stopLoss: { price: 122335.5 },
 			});
 			console.log("============ Stop loss order placed ==========", { stopLossOrder });
 		} catch (error) {

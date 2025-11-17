@@ -18,6 +18,13 @@ export enum Currency {
 export enum TradingPlatform {
 	BINANCE = "BINANCE",
 	KUCOIN = "KUCOIN",
+	BYBIT = "BYBIT",
+}
+
+export enum TradingPlatformSlug {
+	binance = "binance",
+	kucoin = "kucoin",
+	bybit = "bybit",
 }
 
 export enum Category {
@@ -38,6 +45,12 @@ export enum UserRoles {
 }
 
 export enum OrderType {
+	ENTRY = "ENTRY",
+	TAKE_PROFIT = "TAKE_PROFIT",
+	STOP_LOSS = "STOP_LOSS",
+}
+
+export enum OrderSide {
 	BUY = "BUY",
 	SELL = "SELL",
 }
@@ -59,6 +72,10 @@ export enum TradeStatus {
 	ACTIVE = "ACTIVE",
 	CLOSED = "CLOSED",
 	PENDING = "PENDING",
+	PROCESSING = "PROCESSING",
+	PROCESSED = "PROCESSED",
+	FAILED = "FAILED",
+	CANCELED = "CANCELED",
 }
 
 export enum OrderBatchStatus {
@@ -87,4 +104,29 @@ export enum TradingRuleType {
 	AMOUNT = "AMOUNT",
 	COUNT = "COUNT",
 	STRATEGY = "STRATEGY",
+}
+
+export enum CandleStick {
+	fiveMin = "5m",
+	fifteenMin = "15m",
+	thirtyMin = "30m",
+	oneHour = "1HR",
+	twoHours = "2HRS",
+	fourHours = "4HRS",
+	eightHours = "8HRS",
+	twelveHours = "12HRS",
+	oneDay = "1D",
+	threeDays = "3D",
+	oneWeek = "1W",
+}
+
+export enum TradeRisk {
+	low = "LOW",
+	medium = "MEDIUM",
+	high = "HIGH",
+}
+
+export enum TradingPlatformStatus {
+	ACTIVE = "ACTIVE",
+	INACTIVE = "INACTIVE",
 }

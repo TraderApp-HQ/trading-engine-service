@@ -20,6 +20,7 @@ jobs:
               run: |
                   echo "NODE_ENV=${{ vars.NODE_ENV }}" >> $GITHUB_ENV
                   echo "SERVICE=${{ vars.SERVICE }}" >> $GITHUB_ENV
+                  echo "CMC_API_KEY=${{ secrets.CMC_API_KEY }}" >> $GITHUB_ENV
 
             - name: Install Node.js
               uses: actions/setup-node@v2

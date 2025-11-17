@@ -14,4 +14,10 @@ export const TradingPlatforms: ITradingPlatform[] = [
 		logo: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/311.png",
 		category: Category.CRYPTO,
 	},
+	{
+		name: TradingPlatform.BYBIT,
+		id: 521,
+		logo: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/521.png",
+		category: Category.CRYPTO,
+	},
 ];

@@ -47,6 +47,11 @@ export const ResponseMessage = {
 	DELETE_ACCOUNT: "Account deleted Successfully",
 	ACCOUNT_NOT_FOUND: "Account not found",
 	GET_USER_TRADING_ACCOUNT_WITH_BALANCES: "Account Retrieved Successfully",
+
+	GET_TRADE_ASSETS: "Trade assets Fetched Successfully",
+	GET_CURRENCIES: "All Currency Fetched Successfully",
+	GET_EXCHANGES: "Supported trading platform Fetched Successfully",
+	TRADE_PRICE: "Trade Current Price Fetched Successfully",
 };
 
 export const ROUTES = {
@@ -126,3 +131,7 @@ export const defaultTradingRules = [
 		isEnabled: true,
 	},
 ];
+
+export const DEFAULT_ROWS_PER_PAGE = 10;
+
+export const DEFAULT_PAGE = 1;

@@ -12,7 +12,7 @@ import {
 import { ITradingAccountInfo } from "../../factories/interfaces";
 
 const mockCheckToggleFlag = jest.fn().mockResolvedValue(false);
-jest.mock("../../utils/helpers/SplitIOClient", () => {
+jest.mock("../../clients/SplitIOClient", () => {
 	return {
 		FeatureFlagManager: function () {
 			return {
@@ -139,7 +139,7 @@ describe("TradingAccountRepository", () => {
 			});
 
 			expect(account?.connectionStatus).toBe(AccountConnectionStatus.FAILED);
-			expect(account?.errorMessages).toContain("Withdrawal is enabled");
+			// expect(account?.errorMessages).toContain("Withdrawal is enabled");
 			expect(account?.errorMessages).toContain("FUTURES trading is not enabled");
 			expect(account?.errorMessages).toContain("SPOT trading is not enabled");
 			expect(account?.errorMessages).toContain(
@@ -790,7 +790,7 @@ describe("TradingAccountRepository", () => {
 			expect(result).toEqual([]);
 		});
 
-		it("should fail when withdrawal is enabled", async () => {
+		it("should not fail when withdrawal is enabled", async () => {
 			const accountInfo = {
 				...baseAccountInfo,
 				isWithdrawalEnabled: true,
@@ -798,7 +798,7 @@ describe("TradingAccountRepository", () => {
 
 			const result = (repository as any).performTradingAccountHealthCheck(accountInfo, false);
 
-			expect(result).toContain("Withdrawal is enabled");
+			expect(result).not.toContain("Withdrawal is enabled");
 		});
 
 		it("should fail when futures trading is not enabled", async () => {
@@ -924,8 +924,8 @@ describe("TradingAccountRepository", () => {
 
 			const result = (repository as any).performTradingAccountHealthCheck(accountInfo, true);
 
-			expect(result).toHaveLength(5);
-			expect(result).toContain("Withdrawal is enabled");
+			expect(result).toHaveLength(4);
+			// expect(result).toContain("Withdrawal is enabled");
 			expect(result).toContain("FUTURES trading is not enabled");
 			expect(result).toContain("SPOT trading is not enabled");
 			expect(result).toContain("TraderApp IP addresses haven't been whitelisted");

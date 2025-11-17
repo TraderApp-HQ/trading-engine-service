@@ -13,7 +13,8 @@ export enum TrafficType {
 export type FeatureFlag =
 	| "release-send-otp"
 	| "release-binance-account-test-mode"
-	| "release-duplicate-trading-account-connection";
+	| "release-duplicate-trading-account-connection"
+	| "release-bybit-account-test-mode";
 
 export const FEATURE_FLAG_CONFIG: FeatureFlagConfig = {
 	"release-send-otp": {
@@ -23,6 +24,9 @@ export const FEATURE_FLAG_CONFIG: FeatureFlagConfig = {
 		level: TrafficType.USER,
 	},
 	"release-duplicate-trading-account-connection": {
+		level: TrafficType.USER,
+	},
+	"release-bybit-account-test-mode": {
 		level: TrafficType.USER,
 	},
 };

@@ -13,7 +13,7 @@ import UserTradingAccountBalance, {
 	IUserTradingAccountBalance,
 } from "../../models/UserTradingAccountBalance";
 import { decrypt, encrypt } from "../../utils/encryption";
-import { FeatureFlagManager } from "../../utils/helpers/SplitIOClient";
+import { FeatureFlagManager } from "../../clients/SplitIOClient";
 
 export interface ITradingAccountsInput {
 	userId: string;
@@ -95,9 +95,9 @@ class TradingAccountRepository {
 	) {
 		const errorMessages = [];
 
-		if (input.isWithdrawalEnabled) {
-			errorMessages.push("Withdrawal is enabled");
-		}
+		// if (input.isWithdrawalEnabled) {
+		// 	errorMessages.push("Withdrawal is enabled");
+		// }
 
 		if (!input.isFuturesTradingEnabled) {
 			errorMessages.push("FUTURES trading is not enabled");
