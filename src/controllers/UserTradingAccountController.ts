@@ -3,10 +3,15 @@ import { apiResponseHandler } from "@traderapp/shared-resources";
 import { IUserTradingAccount } from "../models/UserTradingAccount";
 import { HttpStatus } from "../utils/httpStatus";
 import { ResponseMessage, ResponseType } from "../config/constants";
-import { ConnectionType, TradingPlatform } from "../config/enums";
+import { AccountType, ConnectionType, Currency, TradingPlatform } from "../config/enums";
 import TradingAccountFactory from "../factories/TradingAccountFactory";
 import TradingAccountRepository from "../repos/TradingAccountRepo";
 import { IAddFund } from "../config/interfaces";
+import { publishMessageToQueue } from "../clients/SQSClient/helpers";
+import {
+	ITrackUserOnboardingChecklistInput,
+	UserOnboardingChecklist,
+} from "../utils/helpers/types";
 
 export const handleTradingAccountManualConnection = async (
 	req: Request,
@@ -21,13 +26,48 @@ export const handleTradingAccountManualConnection = async (
 			platformName,
 			userId,
 			category,
-			apiKey,
-			apiSecret,
-			passphrase,
+			apiKey: apiKey?.trim(),
+			apiSecret: apiSecret?.trim(),
+			passphrase: passphrase?.trim(),
 			connectionType: ConnectionType.MANUAL,
 		});
 
-		await tradingAccountFatory.processTradingAccountInfo();
+		const accountData = await tradingAccountFatory.processTradingAccountInfo();
+		const futuresAccountBalance = accountData.balances
+			.filter(
+				(balance) =>
+					balance.accountType === AccountType.FUTURES &&
+					balance.currency === Currency.USDT
+			)
+			.reduce((acc, bal) => acc + (bal.availableBalance ?? 0), 0);
+
+		// Publish user task status to queue
+		const accountConnectedMessage: ITrackUserOnboardingChecklistInput = {
+			userId,
+			onboardingChecklistItem: UserOnboardingChecklist.IS_TRADING_ACCOUNT_CONNECTED,
+		};
+		const personalATCFundedMessage: ITrackUserOnboardingChecklistInput = {
+			userId,
+			onboardingChecklistItem: UserOnboardingChecklist.IS_PERSONAL_ATC_FUNDED,
+			value: futuresAccountBalance >= 50,
+		};
+		await Promise.all([
+			publishMessageToQueue({
+				queueUrl: process.env.TRACK_USER_ONBOARDING_CHECKLIST_QUEUE ?? "",
+				message: JSON.stringify(accountConnectedMessage),
+			}),
+			publishMessageToQueue({
+				queueUrl: process.env.TRACK_USER_ONBOARDING_CHECKLIST_QUEUE ?? "",
+				message: JSON.stringify(personalATCFundedMessage),
+			}),
+		]);
+
+		console.log("=================== message published to queue ======================", {
+			queueUrl: process.env.TRACK_USER_ONBOARDING_CHECKLIST_QUEUE ?? "",
+			userId,
+			onboardingChecklistItem: UserOnboardingChecklist.IS_TRADING_ACCOUNT_CONNECTED,
+		});
+
 		res.status(HttpStatus.OK).json(
 			apiResponseHandler({
 				type: ResponseType.SUCCESS,

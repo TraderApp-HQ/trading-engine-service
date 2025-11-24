@@ -3,7 +3,7 @@ import { checkAdmin, checkUser } from "../utils/tokens";
 import Joi from "joi";
 import { AccountType, Category, ConnectionType, Currency, TradingPlatform } from "../config/enums";
 import TradingAccountRepository from "../repos/TradingAccountRepo";
-import { FeatureFlagManager } from "../utils/helpers/SplitIOClient";
+import { FeatureFlagManager } from "../clients/SplitIOClient";
 import { ErrorMessage } from "../config/constants";
 
 export async function validateTradingAccountManualConnectionRequest(
@@ -22,12 +22,6 @@ export async function validateTradingAccountManualConnectionRequest(
 		const schema = Joi.object({
 			userId: Joi.string().required().label("User Id"),
 			platformName: Joi.string().required().label("Platform Name"),
-			// apiKey: Joi.string().pattern(apiKeyRegex).required().label("API Key").messages({
-			// 	"string.pattern.base": "API Key is invalid",
-			// }),
-			// apiSecret: Joi.string().pattern(apiKeyRegex).required().label("API Secret").messages({
-			// 	"string.pattern.base": "API Secret is invalid",
-			// }),
 			apiKey: Joi.string().required().min(10).label("API Key").messages({
 				"string.pattern.base": "API Key is invalid",
 			}),
@@ -238,7 +232,7 @@ export async function validateAddFundToTradingAccountRequest(
 		const userId = req.body.userId as string;
 		const featureFlags = new FeatureFlagManager();
 		const isFeatureFlagOn = await featureFlags.checkToggleFlag(
-			"release-referral-tracking",
+			"release-duplicate-trading-account-connection",
 			userId
 		);
 

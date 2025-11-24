@@ -244,11 +244,13 @@ class KucoinAccountService extends BaseTradingAccount {
 		}
 	}
 
-	public async processTradingAccountInfo() {
+	public async processTradingAccountInfo(): Promise<ITradingAccountInfo> {
 		const accountData = (await this.getTradingAccountInfoFromApis()) as ITradingAccountInfo;
 		await this.tradingAccountRepo.processUserTradingAccountInfo(accountData, {
 			isIpAddressWhitelistRequired: false,
 		});
+
+		return accountData;
 	}
 
 	public async deleteTradingAccount() {

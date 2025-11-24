@@ -1,15 +1,15 @@
 import { Request, Response, NextFunction } from "express";
-import Joi from "joi";
+// import Joi from "joi";
 import { checkUser } from "../utils/tokens";
 
 export async function validateOrderRequest(req: Request, res: Response, next: NextFunction) {
 	try {
-		//check accessToken
+		// check accessToken
 		const payload = await checkUser(req);
 
-		//validate request body
+		// validate request body
 
-		//attach jwt payload to request body and continue
+		// attach jwt payload to request body and continue
 		req.body.payload = payload;
 		next();
 	} catch (err: any) {
@@ -21,7 +21,7 @@ export async function validateOrderRequest(req: Request, res: Response, next: Ne
 export async function validateUserBalance(req: Request, res: Response, next: NextFunction) {
 	const { payload } = req.body;
 	try {
-		// console.log("payload okay: ", payload);
+		console.log("payload okay: ", payload);
 		next();
 	} catch (err: any) {
 		next(err);
@@ -32,7 +32,7 @@ export async function validateUserBalance(req: Request, res: Response, next: Nex
 export async function validateUserTradingRules(req: Request, res: Response, next: NextFunction) {
 	const { payload } = req.body;
 	try {
-		// console.log("payload okay: ", payload);
+		console.log("payload okay: ", payload);
 		next();
 	} catch (err: any) {
 		next(err);

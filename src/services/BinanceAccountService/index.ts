@@ -5,6 +5,7 @@ import { AccountType, Category, Currency } from "../../config/enums";
 import { BaseTradingAccount, ITradingAccountInput } from "../../factories/BaseTradingAccount";
 import { ITradingAccountInfo } from "../../factories/interfaces";
 import { ErrorMessage } from "../../config/constants";
+import { FeatureFlagManager } from "../../clients/SplitIOClient";
 
 export interface IBinanceSpotAccountInfo {
 	uid: number;
@@ -41,7 +42,6 @@ export interface IBinanceFuturesAccountBalances {
 }
 
 class BinanceAccountService extends BaseTradingAccount {
-	private readonly timestamp = Date.now();
 	private readonly recvWindow = 5000;
 
 	constructor(input: ITradingAccountInput) {
@@ -60,15 +60,41 @@ class BinanceAccountService extends BaseTradingAccount {
 	}
 
 	private async getTradingAccountInfoFromApis(): Promise<Partial<ITradingAccountInfo>> {
-		const queryString = `timestamp=${this.timestamp}&recvWindow=${this.recvWindow}`;
+		const featureFlags = new FeatureFlagManager();
+		const isTestModeEnabled = await featureFlags.checkToggleFlag(
+			"release-binance-account-test-mode",
+			this.userId
+		);
+
+		// Generate fresh timestamp for each request
+		const timestamp = Date.now();
+		const queryString = `timestamp=${timestamp}&recvWindow=${this.recvWindow}`;
 		const signature = this.generateSignature(queryString);
 		const headers = this.getHeaders();
 
-		const endpoints = [
-			`https://api.binance.com/sapi/v1/account/apiRestrictions?${queryString}&signature=${signature}`,
-			`https://api.binance.com/api/v3/account?${queryString}&signature=${signature}`,
-			`https://fapi.binance.com/fapi/v3/balance?${queryString}&signature=${signature}`,
-		];
+		// Add debugging logs
+		console.log("Binance API Request Debug:", {
+			userId: this.userId,
+			isTestModeEnabled,
+			timestamp,
+			apiKeyPreview: this.apiKey ? this.apiKey.substring(0, 8) + "..." : "MISSING",
+			hasApiSecret: !!this.apiSecret,
+		});
+
+		const apiRestrictionsEndpoint = "https://api.binance.com";
+		const spotEndpoint = "https://api.binance.com";
+		const futuresEndpoint = isTestModeEnabled
+			? "https://testnet.binancefuture.com"
+			: "https://fapi.binance.com";
+
+		// Include only futures endpoint in test mode
+		const endpoints = isTestModeEnabled
+			? [`${futuresEndpoint}/fapi/v3/balance?${queryString}&signature=${signature}`]
+			: [
+					`${apiRestrictionsEndpoint}/sapi/v1/account/apiRestrictions?${queryString}&signature=${signature}`,
+					`${spotEndpoint}/api/v3/account?${queryString}&signature=${signature}`,
+					`${futuresEndpoint}/fapi/v3/balance?${queryString}&signature=${signature}`,
+			  ];
 
 		let apiRestrictionsData: IBinanceApiKeysPermissions | null = null;
 		let spotAccountData: IBinanceSpotAccountInfo | null = null;
@@ -78,53 +104,109 @@ class BinanceAccountService extends BaseTradingAccount {
 				balance: "0.00000000",
 				availableBalance: "0.00000000",
 			},
-			{
-				asset: Currency.BTC,
-				balance: "0.00000000",
-				availableBalance: "0.00000000",
-			},
+			// {
+			// 	asset: Currency.BTC,
+			// 	balance: "0.00000000",
+			// 	availableBalance: "0.00000000",
+			// },
 		] as IBinanceFuturesAccountBalances[];
 
 		try {
 			const responses = await Promise.allSettled(
-				endpoints.map(async (url) => new this.apiClient(url).get({ options: { headers } }))
+				endpoints.map(async (url) => {
+					try {
+						return await new this.apiClient(url).get({ options: { headers } });
+					} catch (error: any) {
+						// Log detailed error information
+						console.error("Detailed API Error:", {
+							url,
+							status: error.response?.status,
+							statusText: error.response?.statusText,
+							data: error.response?.data,
+							headers: error.response?.headers,
+							message: error.message,
+						});
+						throw error;
+					}
+				})
 			);
 
-			// Handle API restrictions data
-			if (responses[0].status === "fulfilled") {
+			// Handle API restrictions data (skip in test mode)
+			if (!isTestModeEnabled && responses[0].status === "fulfilled") {
 				apiRestrictionsData = responses[0].value as IBinanceApiKeysPermissions;
-				console.log("API Restrictions Data:", apiRestrictionsData);
-			} else {
-				console.log("Error fetching API Restrictions:", responses[0].reason);
+			} else if (!isTestModeEnabled && responses[0].status === "rejected") {
+				const error = new Error(`Failed to fetch API Restrictions: ${responses[0].reason}`);
+				console.error("Error in fetching api restrictions", error);
+
+				// Log the detailed error from the rejected promise
+				if (responses[0].reason?.response) {
+					console.error("Binance API Error Details:", {
+						status: responses[0].reason.response.status,
+						data: responses[0].reason.response.data,
+						url: endpoints[0],
+					});
+				}
+
 				throw responses[0].reason;
 			}
 
-			// Handle Spot account data
-			if (responses[1].status === "fulfilled") {
+			// Handle Spot account data (skip in test mode)
+			if (!isTestModeEnabled && responses[1].status === "fulfilled") {
 				spotAccountData = responses[1].value as IBinanceSpotAccountInfo;
-				console.log("Spot Account Data:", spotAccountData);
-			} else {
-				console.log("Error fetching Spot Account Data:", responses[1].reason);
+			} else if (!isTestModeEnabled && responses[1].status === "rejected") {
+				const error = new Error(
+					`Failed to fetch Spot Account Data: ${responses[1].reason}`
+				);
+				console.error(error);
 				throw responses[1].reason;
 			}
 
 			// Handle Futures account data
-			if (responses[2].status === "fulfilled") {
-				futuresAccountData = responses[2].value as IBinanceFuturesAccountBalances[];
-				console.log("Futures Account Data:", futuresAccountData);
+			const futuresResponseIndex = isTestModeEnabled ? 0 : 2;
+			const futuresCallSucceeded = responses[futuresResponseIndex].status === "fulfilled";
+			if (responses[futuresResponseIndex].status === "fulfilled") {
+				futuresAccountData = (
+					responses[futuresResponseIndex] as PromiseFulfilledResult<
+						IBinanceFuturesAccountBalances[]
+					>
+				).value;
 			} else {
-				console.log("Error fetching Futures Account Data:", responses[2].reason);
+				const error = new Error(
+					`Failed to fetch Futures Account Data: ${
+						(responses[futuresResponseIndex] as PromiseRejectedResult).reason
+					}`
+				);
+				console.error(error);
+
+				// throw error in test mode: meaning maybe live api keys are  being used who
+				// plus we are only futures endpoint and fetching all user data (external userId) in test mode, so errors have to be caught and thrown
+				if (isTestModeEnabled) {
+					throw (responses[futuresResponseIndex] as PromiseRejectedResult).reason;
+				}
 			}
 
-			const spotAccountBalances = spotAccountData?.balances.filter(
-				(x: { asset: string }) => x.asset === Currency.BTC || x.asset === Currency.USDT
-			);
+			const spotAccountBalances = isTestModeEnabled
+				? [
+						{
+							asset: Currency.USDT,
+							free: "0.00000000",
+							locked: "0.00000000",
+						},
+						// {
+						// 	asset: Currency.BTC,
+						// 	free: "0.00000000",
+						// 	locked: "0.00000000",
+						// },
+				  ]
+				: spotAccountData?.balances.filter(
+						(x: { asset: string }) => x.asset === Currency.USDT
+				  ) || [];
 
 			const futuresAccountBalances = futuresAccountData?.filter(
-				(x: { asset: string }) => x.asset === Currency.BTC || x.asset === Currency.USDT
+				(x: { asset: string }) => x.asset === Currency.USDT
 			);
 
-			return {
+			const accountData = {
 				userId: this.userId,
 				platformName: this.platformName,
 				platformId: 270,
@@ -134,11 +216,21 @@ class BinanceAccountService extends BaseTradingAccount {
 				refreshToken: this.refreshToken,
 				category: Category.CRYPTO,
 				connectionType: this.connectionType,
-				isFuturesTradingEnabled: apiRestrictionsData.enableFutures,
-				isSpotTradingEnabled: apiRestrictionsData.enableSpotAndMarginTrading,
-				isWithdrawalEnabled: apiRestrictionsData.enableWithdrawals,
-				isIpAddressWhitelisted: apiRestrictionsData.ipRestrict,
-				externalAccountUserId: `${spotAccountData.uid}`,
+				isFuturesTradingEnabled: futuresCallSucceeded
+					? isTestModeEnabled
+						? true
+						: apiRestrictionsData?.enableFutures
+					: false,
+				isSpotTradingEnabled: isTestModeEnabled
+					? true
+					: apiRestrictionsData?.enableSpotAndMarginTrading,
+				isWithdrawalEnabled: isTestModeEnabled
+					? false
+					: apiRestrictionsData?.enableWithdrawals,
+				isIpAddressWhitelisted: isTestModeEnabled ? true : apiRestrictionsData?.ipRestrict,
+				externalAccountUserId: isTestModeEnabled
+					? `${futuresAccountData[0].accountAlias}`
+					: `${spotAccountData?.uid ?? futuresAccountData[0].accountAlias}`,
 				balances: [
 					...spotAccountBalances.map((balance) => ({
 						currency: balance.asset,
@@ -154,7 +246,22 @@ class BinanceAccountService extends BaseTradingAccount {
 							parseFloat(balance.balance) - parseFloat(balance.availableBalance),
 					})),
 				],
+				isTestModeEnabled,
 			};
+			console.log("=================== accountData ======================", {
+				accountData: {
+					...accountData,
+					apiKey: this.apiKey ? this.apiKey.substring(0, 8) + "..." : "MISSING",
+					apiSecret: this.apiSecret ? this.apiSecret.substring(0, 8) + "..." : "MISSING",
+					accessToken: this.accessToken
+						? this.accessToken.substring(0, 8) + "..."
+						: "MISSING",
+					refreshToken: this.refreshToken
+						? this.refreshToken.substring(0, 8) + "..."
+						: "MISSING",
+				},
+			});
+			return accountData;
 		} catch (error: any) {
 			error.name = ErrorMessage.forbidden;
 			error.message =
@@ -164,11 +271,13 @@ class BinanceAccountService extends BaseTradingAccount {
 		}
 	}
 
-	public async processTradingAccountInfo() {
+	public async processTradingAccountInfo(): Promise<ITradingAccountInfo> {
 		const accountData = (await this.getTradingAccountInfoFromApis()) as ITradingAccountInfo;
 		await this.tradingAccountRepo.processUserTradingAccountInfo(accountData, {
 			isIpAddressWhitelistRequired: true,
 		});
+
+		return accountData;
 	}
 
 	public async deleteTradingAccount() {

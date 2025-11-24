@@ -1,6 +1,11 @@
 import { ErrorMessage } from "../../config/constants";
 import { TradingPlatforms } from "../../config/data";
-import { AccountConnectionStatus, TradingPlatform } from "../../config/enums";
+import {
+	AccountConnectionStatus,
+	AccountType,
+	Currency,
+	TradingPlatform,
+} from "../../config/enums";
 import { IAddFund } from "../../config/interfaces";
 import { ITradingAccountBalances, ITradingAccountInfo } from "../../factories/interfaces";
 import UserTradingAccount, { IUserTradingAccount } from "../../models/UserTradingAccount";
@@ -8,7 +13,7 @@ import UserTradingAccountBalance, {
 	IUserTradingAccountBalance,
 } from "../../models/UserTradingAccountBalance";
 import { decrypt, encrypt } from "../../utils/encryption";
-import { FeatureFlagManager } from "../../utils/helpers/SplitIOClient";
+import { FeatureFlagManager } from "../../clients/SplitIOClient";
 
 export interface ITradingAccountsInput {
 	userId: string;
@@ -25,14 +30,14 @@ class TradingAccountRepository {
 	) {
 		const { userId } = input;
 		const featureFlags = new FeatureFlagManager();
-		const isFeatureFlagOn = await featureFlags.checkToggleFlag(
-			"release-referral-tracking",
+		const isDuplicateAccountAllowed = await featureFlags.checkToggleFlag(
+			"release-duplicate-trading-account-connection",
 			userId
 		);
 
 		// Ensures this only runs in production with the help of the feature flag
 		// Allows for connection of same wallet to different users in development and staging but not in production
-		if (!isFeatureFlagOn) {
+		if (!isDuplicateAccountAllowed) {
 			// check if trading account has been connected before by a different user
 			const isExternalAccountConnected = await UserTradingAccount.findOne({
 				externalAccountUserId: input.externalAccountUserId,
@@ -90,9 +95,9 @@ class TradingAccountRepository {
 	) {
 		const errorMessages = [];
 
-		if (input.isWithdrawalEnabled) {
-			errorMessages.push("Withdrawal is enabled");
-		}
+		// if (input.isWithdrawalEnabled) {
+		// 	errorMessages.push("Withdrawal is enabled");
+		// }
 
 		if (!input.isFuturesTradingEnabled) {
 			errorMessages.push("FUTURES trading is not enabled");
@@ -106,12 +111,26 @@ class TradingAccountRepository {
 			errorMessages.push("TraderApp IP addresses haven't been whitelisted");
 		}
 
+		const isFuturesTradingUSDTBalanceAboveFifty = input.balances.some(
+			(balance) =>
+				balance.accountType === AccountType.FUTURES &&
+				balance.currency === Currency.USDT &&
+				balance.availableBalance >= 50
+		);
+		if (!isFuturesTradingUSDTBalanceAboveFifty) {
+			errorMessages.push("Futures trading USDT balance is less than 50 USDT");
+		}
+
 		return errorMessages;
 	}
 
 	private async saveTradingAccountInfoWithBalances(accountData: ITradingAccountInfo) {
 		const tradingAccount = await UserTradingAccount.findOneAndUpdate(
-			{ userId: accountData.userId, platformName: accountData.platformName },
+			{
+				userId: accountData.userId,
+				platformName: accountData.platformName,
+				externalAccountUserId: accountData.externalAccountUserId,
+			},
 			{
 				$set: {
 					...accountData,
@@ -150,6 +169,10 @@ class TradingAccountRepository {
 						accountType: balance.accountType,
 						availableBalance: balance.availableBalance,
 						lockedBalance: balance.lockedBalance,
+						accountSize: this.computeAccountSize(
+							balance.availableBalance,
+							balance.lockedBalance ?? 0
+						),
 					},
 				},
 				{
@@ -162,9 +185,14 @@ class TradingAccountRepository {
 	}
 
 	public async archiveTradingAccount({ userId, platformName }: ITradingAccountInput) {
+		// Only archive accounts that are not already archived
 		const promises = [
 			UserTradingAccount.findOneAndUpdate(
-				{ userId, platformName },
+				{
+					userId,
+					platformName,
+					connectionStatus: { $ne: AccountConnectionStatus.ARCHIVED },
+				},
 				{
 					$set: {
 						connectionStatus: AccountConnectionStatus.ARCHIVED,
@@ -221,6 +249,7 @@ class TradingAccountRepository {
 					accountType: balance.accountType,
 					availableBalance: balance.availableBalance,
 					lockedBalance: balance.lockedBalance,
+					accountSize: balance.accountSize,
 				})),
 		}));
 
@@ -246,6 +275,7 @@ class TradingAccountRepository {
 			accountType: balance.accountType,
 			availableBalance: balance.availableBalance,
 			lockedBalance: balance.lockedBalance,
+			accountSize: balance.accountSize,
 		}));
 
 		// Construct the result object
@@ -308,7 +338,8 @@ class TradingAccountRepository {
 		currency,
 	}: IAddFund): Promise<void> {
 		try {
-			await UserTradingAccountBalance.findOneAndUpdate(
+			// Increment the balance
+			const updated = await UserTradingAccountBalance.findOneAndUpdate(
 				{
 					userId,
 					platformName,
@@ -316,14 +347,47 @@ class TradingAccountRepository {
 					currency,
 				},
 				{
-					$set: {
+					$inc: {
 						availableBalance: amount,
 					},
-				}
+				},
+				{ new: true }
 			);
+
+			// If it's a FUTURES account, check and clear the error message if needed
+			if (accountType === AccountType.FUTURES && updated && updated.availableBalance >= 50) {
+				await UserTradingAccount.findOneAndUpdate(
+					{
+						userId,
+						platformName,
+					},
+					{
+						$pull: {
+							// Remove the specific error message from the errorMessages array
+							errorMessages: "Futures trading USDT balance is less than 50 USDT",
+						},
+					}
+				);
+			}
 		} catch (error) {
 			throw new Error("Failed to add fund to trading account");
 		}
+	}
+
+	public computeAccountSize(availableBalance: number, lockedBalance: number) {
+		const totalBalance = availableBalance + (lockedBalance ?? 0);
+
+		const tiers = [
+			100, 200, 300, 500, 750, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 7500, 10000,
+			12500, 15000, 20000, 25000, 30000, 40000, 50000, 60000, 75000, 100000, 125000, 150000,
+			200000, 250000, 300000, 400000, 500000,
+		];
+
+		// Find the smallest tier that accommodates the balance
+		const accountSize = tiers.find((tier) => totalBalance <= tier);
+
+		// Default to 500000 for anything above the highest tier
+		return accountSize || 500000;
 	}
 }
 
