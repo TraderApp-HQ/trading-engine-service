@@ -71,9 +71,9 @@ export function validateTradeEligibility(input: TradeInput): TradeValidationResu
 export async function fetchBinanceFuturesSymbolRules(): Promise<IPlatformTradingRuleResult[]> {
 	const rules = binanceFuturesRules.map((s: any) => {
 		const result: IPlatformTradingRuleResult = {
-			pair: s.symbol,
+			pair: s.pair,
 			baseAsset: s.baseAsset,
-			quoteCurrency: s.quoteAsset,
+			quoteCurrency: s.quoteCurrency,
 			minQuantity: s.minQuantity,
 			stepSize: s.stepSize,
 			minNotional: s.minNotional,
