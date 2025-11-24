@@ -18,6 +18,8 @@ export interface IMasterTrade extends Document {
 	quoteCurrency: string;
 	baseQuantity: number;
 	quoteTotal: number;
+	originalBaseQuantity: number;
+	originalQuoteTotal: number;
 	currentPrice: number;
 	entryPrice: number;
 	stopLossPrice: number;
@@ -35,6 +37,8 @@ export interface IMasterTrade extends Document {
 	pnlPercentage: number;
 	estimatedProfit: number;
 	estimatedLoss: number;
+	originalEstimatedProfit: number;
+	originalEstimatedLoss: number;
 	status: TradeStatus;
 	createdAt: Date;
 	updatedAt: Date;
@@ -62,6 +66,7 @@ const MasterTradeSchema = new Schema<IMasterTrade>(
 		baseAsset: { type: String, required: true },
 		baseAssetLogoUrl: { type: String, required: true },
 		baseQuantity: { type: Number, default: 0 },
+		originalBaseQuantity: { type: Number, default: 0 },
 		currentPrice: { type: Number, default: 0 },
 		entryPrice: { type: Number, required: true },
 		stopLossPrice: { type: Number, required: true },
@@ -72,12 +77,15 @@ const MasterTradeSchema = new Schema<IMasterTrade>(
 		tradeNote: { type: String },
 		quoteCurrency: { type: String, required: true },
 		quoteTotal: { type: Number, default: 0 },
+		originalQuoteTotal: { type: Number, default: 0 },
 		pair: { type: String, required: true },
 		side: { type: String, enum: Object.values(TradeSide), required: true },
 		pnl: { type: Number, default: 0 },
 		pnlPercentage: { type: Number, default: 0 },
 		estimatedProfit: { type: Number, default: 0 },
 		estimatedLoss: { type: Number, default: 0 },
+		originalEstimatedProfit: { type: Number, default: 0 },
+		originalEstimatedLoss: { type: Number, default: 0 },
 		status: {
 			type: String,
 			enum: Object.values(TradeStatus),

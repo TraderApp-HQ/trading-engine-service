@@ -3,7 +3,7 @@ import cors from "cors";
 import { config } from "dotenv";
 import swaggerUi from "swagger-ui-express";
 import { logger, initSecrets, apiResponseHandler } from "@traderapp/shared-resources";
-import { ENVIRONMENTS, ErrorMessage, ResponseType } from "./config/constants";
+import { ENVIRONMENTS, ResponseType } from "./config/constants";
 import secretsJson from "./env.json";
 import specs from "./utils/swagger";
 
@@ -11,6 +11,7 @@ import specs from "./utils/swagger";
 import { OrderRoutes, UserTradingAccountRoutes, TradeRoutes } from "./routes";
 import mongoose from "mongoose";
 import runAllJobs from "./jobs";
+import { ErrorName } from "./config/enums";
 
 config();
 
@@ -27,10 +28,10 @@ const secretNames = ["common-secrets", "trading-engine-service-secrets", "assets
 		secretsJson,
 	});
 
-	const port = process.env.PORT;
+	// const port = process.env.PORT;
 	const dbUrl = process.env.TRADING_ENGINE_SERVICE_DB_URL ?? "";
 
-	// const port = 8081;
+	const port = 8081;
 	// const dbUrl = "mongodb://localhost:27017/trading-service-db";
 	mongoose
 		.connect(dbUrl)
@@ -112,13 +113,13 @@ function startServer() {
 		let errorMessage = err.message;
 		let statusCode;
 
-		if (err.name === ErrorMessage.validationError) statusCode = 400;
-		else if (err.name === ErrorMessage.unauthorized) statusCode = 401;
-		else if (err.name === ErrorMessage.forbidden) statusCode = 403;
-		else if (err.name === ErrorMessage.notfound) statusCode = 404;
+		if (err.name === ErrorName.VALIDATION) statusCode = 400;
+		else if (err.name === ErrorName.UNAUTHORIZED) statusCode = 401;
+		else if (err.name === ErrorName.FORBIDDEN) statusCode = 403;
+		else if (err.name === ErrorName.NOT_FOUND) statusCode = 404;
 		else {
 			statusCode = 500;
-			errorName = "InternalServerError";
+			errorName = ErrorName.INTERNAL_ERROR;
 			errorMessage = "Something went wrong. Please try again after a while.";
 			console.log("Error name: ", errorName, "Error message: ", err.message, "errorObj", err);
 		}

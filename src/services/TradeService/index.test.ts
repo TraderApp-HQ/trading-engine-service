@@ -119,6 +119,8 @@ describe("TradeService", () => {
 				quoteCurrency: "USDT",
 				baseQuantity: 0.1,
 				quoteTotal: 6000,
+				originalBaseQuantity: 0.1,
+				originalQuoteTotal: 6000,
 				currentPrice: 60000,
 				entryPrice: 60000,
 				stopLossPrice: 58000,
@@ -135,6 +137,8 @@ describe("TradeService", () => {
 				],
 				estimatedProfit: 0,
 				estimatedLoss: 0,
+				originalEstimatedLoss: 0,
+				originalEstimatedProfit: 0,
 				candlestick: CandleStick.fifteenMin,
 				risk: TradeRisk.low,
 				category: Category.CRYPTO,
@@ -161,6 +165,10 @@ describe("TradeService", () => {
 				candlestick: CandleStick.fifteenMin,
 				risk: TradeRisk.low,
 				category: Category.CRYPTO,
+				originalBaseQuantity: 0.1,
+				originalQuoteTotal: 6000,
+				originalEstimatedLoss: 0,
+				originalEstimatedProfit: 0,
 			};
 
 			const masterTradeInputThree: ICreateMasterTrade = {
@@ -184,6 +192,10 @@ describe("TradeService", () => {
 				candlestick: CandleStick.fifteenMin,
 				risk: TradeRisk.low,
 				category: Category.CRYPTO,
+				originalBaseQuantity: 0.1,
+				originalQuoteTotal: 6000,
+				originalEstimatedLoss: 0,
+				originalEstimatedProfit: 0,
 			};
 
 			const [createdMasterTradeOne, createdMasterTradeTwo, createdMasterTradeThree] =

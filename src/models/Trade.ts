@@ -9,15 +9,19 @@ export interface ITrade extends Document {
 	quoteCurrency: string;
 	baseQuantity: number;
 	quoteTotal: number;
+	originalBaseQuantity: number;
+	originalQuoteTotal: number;
 	entryPrice: number;
 	stopLossPrice: number;
-	takeProfitPrice: number;
+	takeProfitPrice?: number;
 	pair: string;
 	side: TradeSide;
 	pnl: number;
 	pnlPercentage: number;
 	estimatedProfit: number;
 	estimatedLoss: number;
+	originalEstimatedProfit: number;
+	originalEstimatedLoss: number;
 	status: TradeStatus;
 	platformName?: TradingPlatform;
 	createdAt: Date;
@@ -35,17 +39,21 @@ const TradeSchema = new Schema<ITrade>(
 		masterTradeId: { type: String, required: true, ref: "master-trade" },
 		baseAsset: { type: String, required: true },
 		baseQuantity: { type: Number, required: true },
+		originalBaseQuantity: { type: Number, default: 0 },
 		entryPrice: { type: Number, required: true },
 		stopLossPrice: { type: Number, required: true },
 		takeProfitPrice: { type: Number },
 		quoteCurrency: { type: String, required: true },
 		quoteTotal: { type: Number, required: true },
+		originalQuoteTotal: { type: Number, default: 0 },
 		pair: { type: String, required: true },
 		side: { type: String, enum: Object.values(TradeSide), required: true },
 		pnl: { type: Number, default: 0 },
 		pnlPercentage: { type: Number, default: 0 },
 		estimatedProfit: { type: Number, default: 0 },
 		estimatedLoss: { type: Number, default: 0 },
+		originalEstimatedProfit: { type: Number, default: 0 },
+		originalEstimatedLoss: { type: Number, default: 0 },
 		status: { type: String, enum: Object.values(TradeStatus), required: true },
 		platformName: { type: String, enum: Object.values(TradingPlatform) },
 	},

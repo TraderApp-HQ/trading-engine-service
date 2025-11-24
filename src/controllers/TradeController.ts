@@ -44,7 +44,7 @@ export async function getTradeByIdHandler(req: Request, res: Response, next: Nex
 		const { id } = req.params;
 
 		// Fetch trade using the service method
-		const trade = await tradeService.getTradeById(id);
+		const trade = await tradeService.getMasterTradeById(id);
 
 		if (!trade) {
 			res.status(HttpStatus.NOT_FOUND).json(
@@ -89,7 +89,9 @@ export async function createMasterTradesHandler(req: Request, res: Response, nex
 			baseAssetLogoUrl: req.body.baseAssetLogoUrl,
 			quoteCurrency: req.body.quoteCurrency,
 			baseQuantity: req.body.baseQuantity,
+			originalBaseQuantity: req.body.baseQuantity,
 			quoteTotal: req.body.quoteTotal,
+			originalQuoteTotal: req.body.quoteTotal,
 			currentPrice: req.body.currentPrice,
 			entryPrice: req.body.entryPrice,
 			stopLossPrice: req.body.stopLossPrice,
@@ -103,6 +105,8 @@ export async function createMasterTradesHandler(req: Request, res: Response, nex
 			status: req.body.status,
 			estimatedLoss: req.body.estimatedLoss,
 			estimatedProfit: req.body.estimatedProfit,
+			originalEstimatedLoss: req.body.estimatedLoss,
+			originalEstimatedProfit: req.body.estimatedProfit,
 			accountType: req.body.accountType,
 			orderPlacementType: req.body.orderPlacementType,
 			supportedTradingPlatforms: req.body.supportedTradingPlatforms,
