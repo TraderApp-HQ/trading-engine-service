@@ -2,6 +2,7 @@
 
 import { TradingPlatform } from "../../../config/enums";
 import { IPlatformTradingRuleResult } from "../../../config/interfaces";
+import { binanceFuturesRules } from "./binanceFuturesRulesData";
 
 interface SymbolRule {
 	minQty: number; // Minimum quantity of the base asset
@@ -68,26 +69,14 @@ export function validateTradeEligibility(input: TradeInput): TradeValidationResu
 }
 
 export async function fetchBinanceFuturesSymbolRules(): Promise<IPlatformTradingRuleResult[]> {
-	const res = await fetch("https://fapi.binance.com/fapi/v1/exchangeInfo");
-	const data = await res.json();
-
-	const usdtSymbols = data.symbols?.filter(
-		(s: any) => s.contractType === "PERPETUAL" && s.quoteAsset === "USDT"
-	);
-
-	const rules = usdtSymbols.map((s: any) => {
-		const lotFilter =
-			s.filters.find((f: any) => f.filterType === "LOT_SIZE") ||
-			s.filters.find((f: any) => f.filterType === "MARKET_LOT_SIZE");
-		const minNotionalFilter = s.filters.find((f: any) => f.filterType === "MIN_NOTIONAL");
-
+	const rules = binanceFuturesRules.map((s: any) => {
 		const result: IPlatformTradingRuleResult = {
-			pair: s.symbol,
+			pair: s.pair,
 			baseAsset: s.baseAsset,
-			quoteCurrency: s.quoteAsset,
-			minQuantity: lotFilter ? parseFloat(lotFilter.minQty) : 0,
-			stepSize: lotFilter ? parseFloat(lotFilter.stepSize) : undefined,
-			minNotional: minNotionalFilter ? parseFloat(minNotionalFilter.notional) : 0,
+			quoteCurrency: s.quoteCurrency,
+			minQuantity: s.minQuantity,
+			stepSize: s.stepSize,
+			minNotional: s.minNotional,
 			platform: TradingPlatform.BINANCE,
 		};
 		return result;

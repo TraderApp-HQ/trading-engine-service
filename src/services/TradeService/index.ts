@@ -1,24 +1,181 @@
-import mongoose from "mongoose";
+import mongoose, { SortOrder } from "mongoose";
 import { IOHLCData } from "../../clients/BinanceFuturesClient";
 import { publishMessageToQueue } from "../../clients/SQSClient/helpers";
 import { ErrorName, OrderType, TradeSide, TradeStatus, TradingPlatform } from "../../config/enums";
-import { ApplicationError } from "../../config/helpers";
 import {
 	ICloseTradeEvent,
+	IGetAllTradeAssetParams,
+	IGetAllTradingPlatformQuery,
+	IGetAllTradingPlatformsParam,
+	IGetSupportedTradingPlatforms,
 	IProcessUserTradingWithMasterTradeEvent,
+	ISupportedTradingPlatform,
 	ITradeAggregate,
 } from "../../config/interfaces";
 import { ICreateMasterTrade, IMasterTrade, MasterTrade } from "../../models/MasterTrade";
 import { ITrade, IUserTrade, Trade } from "../../models/Trade";
 import { IOrder, Order } from "../../models/Order";
+import Currency, { ICurrency } from "../../models/Currency";
+import TradingPlatformPair from "../../models/TradingPlatformPair";
+import TradingPlatformModel, { ITradingPlatform } from "../../models/TradingPlatform";
+import Asset, { IAsset } from "../../models/Asset";
+import { ApplicationError } from "../../config/helpers";
 
 interface IMapTradingPlatformToQueueUrlResponse {
 	ordersActivationQueue?: string;
 	stopLossOrdersQueue?: string;
 	takeProfitOrdersQueue?: string;
 	closeTradeQueue?: string;
+	cancelOrdersQueue?: string;
 }
+
 export class TradeService {
+	public async getAllTradeAssets({
+		category,
+		page,
+		rowsPerPage,
+		orderBy,
+		sortBy,
+	}: IGetAllTradeAssetParams): Promise<IAsset[] | null> {
+		try {
+			const offset = (page - 1) * rowsPerPage;
+
+			// Construct the dynamic sorting object
+			const sortOptions: Record<string, SortOrder> = {};
+			sortOptions[sortBy] = orderBy === "asc" ? 1 : -1;
+
+			const exchanges = await Asset.find({
+				isTradingActive: true,
+				isCoinActive: true,
+				category,
+			})
+				.sort(sortOptions)
+				.skip(offset)
+				.limit(rowsPerPage)
+				.select({
+					id: 1,
+					name: 1,
+					symbol: 1,
+					rank: 1,
+					logo: 1,
+					dateLaunched: 1,
+					urls: 1,
+				});
+
+			if (!exchanges) {
+				return null;
+			}
+
+			return exchanges;
+		} catch (error) {
+			if (error instanceof Error) {
+				throw new Error(error.message);
+			}
+			throw new Error("An unknown error occurred while retrieving trade assets.");
+		}
+	}
+
+	public async getSupportedCurrencies(): Promise<ICurrency[] | null> {
+		try {
+			const currencies = await Currency.find({}).where({ isTradingActive: true }).select({
+				id: 1,
+				name: 1,
+				symbol: 1,
+				logo: 1,
+			});
+
+			if (!currencies || currencies.length === 0) {
+				return null;
+			}
+
+			return currencies;
+		} catch (error) {
+			if (error instanceof Error) {
+				throw new Error(error.message);
+			}
+			throw new Error("An unknown error occurred while retrieving supported currencies.");
+		}
+	}
+
+	public async getSupportedTradingPlatforms({
+		baseAssetId,
+		quoteCurrencyId,
+	}: IGetSupportedTradingPlatforms): Promise<ISupportedTradingPlatform[] | null> {
+		try {
+			// find and return trading platforms where assetId and currencyId match
+			const platforms = await TradingPlatformPair.find({
+				assetId: baseAssetId,
+				currencyId: quoteCurrencyId,
+			})
+				.populate({
+					path: "platformId", // Populate the exchange details using exchangeId
+					match: { status: TradeStatus.ACTIVE },
+					select: "id name logo",
+				})
+				.sort({ name: 1 });
+
+			// Filter out exchange pairs where exchangeId is null (i.e., inactive exchanges)
+			const activePlatforms = platforms.filter((platform) => platform.platformId !== null);
+
+			if (!activePlatforms || activePlatforms.length === 0) {
+				return null;
+			}
+
+			const formattedPlatforms: ISupportedTradingPlatform[] = activePlatforms.map(
+				(platform: any) => ({
+					_id: platform.platformId._id,
+					logo: platform.platformId.logo,
+					name: platform.platformId.name,
+				})
+			);
+
+			return formattedPlatforms;
+		} catch (error: any) {
+			if (error instanceof Error) {
+				throw new Error(error.message);
+			}
+			throw new Error(
+				"An unknown error occurred while retrieving supported trading platforms."
+			);
+		}
+	}
+
+	public async getAllAccountTradingPlatforms({
+		page,
+		rowsPerPage,
+		orderBy,
+		status,
+	}: IGetAllTradingPlatformsParam): Promise<ITradingPlatform[] | null> {
+		try {
+			const offset = (page - 1) * rowsPerPage;
+
+			// Create the query object
+			const query: IGetAllTradingPlatformQuery = {};
+			if (status) {
+				query.status = status;
+			}
+
+			// Fetch the trading platforms based on the query
+			const tardingPlatforms = await TradingPlatformModel.find(query)
+				.sort({ name: orderBy === "asc" ? 1 : -1 })
+				.skip(offset)
+				.limit(rowsPerPage);
+
+			if (!tardingPlatforms || tardingPlatforms.length === 0) {
+				return null;
+			}
+
+			return tardingPlatforms;
+		} catch (error: any) {
+			if (error instanceof Error) {
+				throw new Error(error.message);
+			}
+			throw new Error(
+				"An unknown error occurred while retrieving supported trading platforms."
+			);
+		}
+	}
+
 	public async getActiveMasterTrades(): Promise<{
 		trades: IMasterTrade[];
 		tradesAggregate: ITradeAggregate;
@@ -73,7 +230,7 @@ export class TradeService {
 		})
 			.populate({
 				path: "masterTradeId",
-				select: "baseAssetLogoUrl currentPrice -_id",
+				select: "baseAssetLogoUrl currentPrice _id",
 			})
 			.sort({ createdAt: -1 })
 			.lean();
@@ -87,7 +244,7 @@ export class TradeService {
 				side: trade.side,
 				entryPrice: trade.entryPrice,
 				baseQuantity: trade.baseQuantity,
-				targetPrice: trade.takeProfitPrice,
+				targetPrice: trade.masterTradeId?.currentPrice,
 				riskUSDT: trade.estimatedLoss,
 				requiredMargin: trade.quoteTotal,
 			});
@@ -98,6 +255,7 @@ export class TradeService {
 
 			const userTrade: IUserTrade = {
 				...trade,
+				masterTradeId: trade.masterTradeId?._id.toString(),
 				baseAssetLogoUrl: trade.masterTradeId?.baseAssetLogoUrl,
 				currentPrice: trade.masterTradeId?.currentPrice,
 				pnl: pnlAmount,
@@ -144,21 +302,16 @@ export class TradeService {
 		totalBalance: number;
 		totalRisk: number;
 	}): ITradeAggregate {
-		const accummulatedUnrealisedPnL = Number((totalBalance - totalRisk).toFixed(2));
+		const accummulatedUnrealisedPnL = Number(totalBalance.toFixed(2));
 
-		// If totalRisk is zero and accumulatedUnrealisedPnL is positive, use 1 as denominator to convert to percentage
+		// If totalRisk is zero, use 1 as denominator to convert to percentage
 		const accummulatedUnrealisedPnLPercentage = Number(
-			(totalRisk === 0 && accummulatedUnrealisedPnL > 0
-				? accummulatedUnrealisedPnL * 100
-				: totalRisk === 0
-				? 0
-				: (accummulatedUnrealisedPnL / totalRisk) * 100
-			).toFixed(2)
-		); // Otherwise use normal percentage calculation
+			((accummulatedUnrealisedPnL / (totalRisk === 0 ? 1 : totalRisk)) * 100).toFixed(2)
+		);
 
 		return {
-			accummulatedTotalBalance: totalBalance,
-			accummulatedTotalRisk: totalRisk,
+			accummulatedTotalBalance: Number(totalBalance.toFixed(2)),
+			accummulatedTotalRisk: Number(totalRisk.toFixed(2)),
 			accummulatedUnrealisedPnL,
 			accummulatedUnrealisedPnLPercentage,
 		};
@@ -226,6 +379,7 @@ export class TradeService {
 				stopLossOrdersQueue: "",
 				takeProfitOrdersQueue: "",
 				closeTradeQueue: "",
+				cancelOrdersQueue: "",
 			};
 		}
 		if (tradingPlatform === TradingPlatform.BYBIT) {
@@ -233,7 +387,8 @@ export class TradeService {
 				ordersActivationQueue: process.env.PROCESS_BYBIT_ORDERS_ACTIVATION_QUEUE ?? "",
 				stopLossOrdersQueue: process.env.PROCESS_BYBIT_STOP_LOSS_ORDERS_QUEUE ?? "",
 				takeProfitOrdersQueue: process.env.PROCESS_BYBIT_TAKE_PROFIT_ORDERS_QUEUE ?? "",
-				closeTradeQueue: process.env.PROCESS_BYBIT_CLOSE_TRADE_QUEUE ?? "",
+				closeTradeQueue: process.env.PROCESS_BYBIT_CLOSE_TRADES_QUEUE ?? "",
+				cancelOrdersQueue: process.env.PROCESS_BYBIT_CANCEL_ORDERS_QUEUE ?? "",
 			};
 		}
 		return {
@@ -241,6 +396,7 @@ export class TradeService {
 			stopLossOrdersQueue: "",
 			takeProfitOrdersQueue: "",
 			closeTradeQueue: "",
+			cancelOrdersQueue: "",
 		};
 	}
 
@@ -465,35 +621,38 @@ export class TradeService {
 					statuses: [TradeStatus.PROCESSED],
 				});
 
-				// update user trades status to ACTIVATING
-				await Promise.all(
-					userTrades.map(async (userTrade) => {
-						await Trade.updateOne(
-							{ _id: userTrade._id },
-							{ $set: { status: TradeStatus.ACTIVATING } }
-						);
-					})
-				);
-
-				// publish user trades to queue
-				const { ordersActivationQueue } = this.mapTradingPlatformToQueueUrl(
-					userTrades[0].platformName
-				);
-				if (!ordersActivationQueue) {
-					console.warn(
-						`No orders activation queue found for platform: ${userTrades[0].platformName}`
+				// Only proceed if there are user trades
+				if (userTrades && userTrades.length > 0) {
+					// update user trades status to ACTIVATING
+					await Promise.all(
+						userTrades.map(async (userTrade) => {
+							await Trade.updateOne(
+								{ _id: userTrade._id },
+								{ $set: { status: TradeStatus.ACTIVATING } }
+							);
+						})
 					);
-					return;
+
+					// publish user trades to queue
+					const { ordersActivationQueue } = this.mapTradingPlatformToQueueUrl(
+						userTrades[0].platformName
+					);
+					if (!ordersActivationQueue) {
+						console.warn(
+							`No orders activation queue found for platform: ${userTrades[0].platformName}`
+						);
+						return;
+					}
+					await Promise.all(
+						userTrades.map(async (userTrade) => {
+							await publishMessageToQueue({
+								queueUrl: ordersActivationQueue,
+								message: JSON.stringify(userTrade),
+							});
+							return userTrade;
+						})
+					);
 				}
-				await Promise.all(
-					userTrades.map(async (userTrade) => {
-						await publishMessageToQueue({
-							queueUrl: ordersActivationQueue,
-							message: JSON.stringify(userTrade),
-						});
-						return userTrade;
-					})
-				);
 
 				// update master trade status to ACTIVE
 				await MasterTrade.updateOne(
@@ -575,14 +734,15 @@ export class TradeService {
 				);
 				throw error;
 			}
-		} else {
-			await MasterTrade.updateOne(
-				{ _id: masterTrade._id },
-				{
-					$set: { currentPrice },
-				}
-			);
 		}
+
+		// Always update current price regardless of trigger status
+		await MasterTrade.updateOne(
+			{ _id: masterTrade._id },
+			{
+				$set: { currentPrice },
+			}
+		);
 	}
 
 	private async processMasterTradeWhenStopLossIsReached(
@@ -595,10 +755,10 @@ export class TradeService {
 
 		// Check if stop loss price is reached based on trade side
 		if (masterTrade.side === TradeSide.LONG) {
-			// For LONG trades, check if HIGH price reached or exceeded trigger
+			// For LONG trades, check if LOW price reached or went below stop loss price
 			stopLossPriceReached = lowPrice <= masterTrade.stopLossPrice;
 		} else {
-			// For SHORT trades, check if LOW price reached or went below trigger
+			// For SHORT trades, check if HIGH price reached or exceeded stop loss price
 			stopLossPriceReached = highPrice >= masterTrade.stopLossPrice;
 		}
 
@@ -649,10 +809,10 @@ export class TradeService {
 		// Check if take profit price is reached based on trade side
 		if (masterTrade.side === TradeSide.LONG) {
 			// For LONG trades, check if HIGH price reached or exceeded trigger
-			takeProfitPriceReached = lowPrice <= masterTrade.takeProfitPrice;
+			takeProfitPriceReached = highPrice >= masterTrade.takeProfitPrice;
 		} else {
 			// For SHORT trades, check if LOW price reached or went below trigger
-			takeProfitPriceReached = highPrice >= masterTrade.takeProfitPrice;
+			takeProfitPriceReached = lowPrice <= masterTrade.takeProfitPrice;
 		}
 
 		if (takeProfitPriceReached) {
@@ -735,7 +895,7 @@ export class TradeService {
 		if (!takeProfitPrice && masterTrade.takeProfitPrice) {
 			await MasterTrade.updateOne(
 				{ _id: masterTrade._id },
-				{ $set: { takeProfitPrice: undefined } }
+				{ $unset: { takeProfitPrice: "" } }
 			);
 
 			// publish user trades to queue
@@ -902,16 +1062,49 @@ export class TradeService {
 			}
 		);
 
+		// publish user trade orders to queue so they can be canceled
 		if (masterTrade.status === TradeStatus.PROCESSED) {
-			// publish user trade orders to queue so they can be canceled
 			// get user trades for this master trade
 			const userTrades = await this.getUserTradesForMasterTrade({
 				masterTradeId: (masterTrade._id as mongoose.Types.ObjectId).toString(),
 				statuses: [TradeStatus.PROCESSED],
 			});
 
-			console.log({ userTrades });
+			// get user trade orders
+			const userTradeOrders = await Promise.all(
+				userTrades.map(async (userTrade) => {
+					const order = await this.getUserTradeOrder({
+						tradeId: (userTrade._id as mongoose.Types.ObjectId).toString(),
+						orderType: OrderType.ENTRY,
+					});
+					return order;
+				})
+			);
+
+			// publish user trade orders to queue
+			await Promise.all(
+				userTradeOrders.map(async (order) => {
+					if (!order) {
+						return;
+					}
+
+					// get platformName from user trade
+					const userTrade = userTrades.find(
+						(trade) =>
+							(trade._id as mongoose.Types.ObjectId).toString() ===
+							order.tradeId.toString()
+					);
+
+					await publishMessageToQueue({
+						queueUrl:
+							this.mapTradingPlatformToQueueUrl(userTrade?.platformName)
+								.cancelOrdersQueue ?? "",
+						message: JSON.stringify(order),
+					});
+
+					return order;
+				})
+			);
 		}
-		// console.log("Orders placement successfully trigger for master trade", { masterTrade });
 	}
 }

@@ -140,7 +140,15 @@ export interface BybitOrderDetails {
 	cumExecValue: string;
 	cumExecFee: string;
 	avgPrice: string;
-	orderStatus: string;
+	orderStatus:
+		| "New"
+		| "PartiallyFilled"
+		| "Untriggered"
+		| "Filled"
+		| "Cancelled"
+		| "Rejected"
+		| "Deactivated"
+		| "Triggered";
 	updatedTime: string;
 	createdTime: string;
 }

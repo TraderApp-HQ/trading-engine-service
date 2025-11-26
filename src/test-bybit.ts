@@ -48,11 +48,11 @@ import { BybitFuturesClient } from "./clients/BybitFuturesClient";
 
 		// console.log("\n========== 3. Place Limit Order ==========");
 		// const limitOrder = await client.placeLimitOrder({
-		// 	symbol: "BNBUSDT",
-		// 	side: "Sell",
-		// 	qty: "0.5",
-		// 	price: "1000",
-		// 	leverage: 40
+		// 	symbol: "BTCUSDT",
+		// 	side: "Buy",
+		// 	qty: "0.05",
+		// 	price: "86585",
+		// 	leverage: 50,
 		// });
 		// console.log("Limit Order Response:", limitOrder);
 		// console.log("Order ID:", limitOrder.orderId);
@@ -115,19 +115,19 @@ import { BybitFuturesClient } from "./clients/BybitFuturesClient";
 
 		// Method 2: Position-level SL/TP (recommended for Bybit)
 		// eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-		const setPositionStopLossTakeProfit = await client.setPositionStopLossTakeProfit({
-			symbol: "BTCUSDT",
-			// stopLoss: "82260",
-			takeProfit: "0",
-		});
-		console.log("Set Position Stop Loss Take Profit", { setPositionStopLossTakeProfit });
+		// const setPositionStopLossTakeProfit = await client.setPositionStopLossTakeProfit({
+		// 	symbol: "BTCUSDT",
+		// 	// stopLoss: "82260",
+		// 	takeProfit: "0",
+		// });
+		// console.log("Set Position Stop Loss Take Profit", { setPositionStopLossTakeProfit });
 
 		// Get order by order ID
-		// const order = await client.getOrderById({
-		// 	symbol: "BTCUSDT",
-		// 	orderId: "2cb82ee5-0edd-4899-b2c3-00d3d4d9f230",
-		// });
-		// console.log("Order", { order });
+		const order = await client.getOrderById({
+			symbol: "BTCUSDT",
+			orderId: "f2954bc6-575f-48e6-b2b0-4f881df266ef",
+		});
+		console.log("Order", { order });
 
 		// // Get order by custom order link ID
 		// const order2 = await client.getOrderById({
