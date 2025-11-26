@@ -1162,23 +1162,23 @@ describe("TradeService", () => {
 			});
 
 			// Create user trade with platformName
-			// const userTrade = await Trade.create({
-			// 	userId: "test-user-123",
-			// 	masterTradeId: (trade._id as any).toString(),
-			// 	baseAsset: "BTC",
-			// 	baseQuantity: 0.1,
-			// 	entryPrice: 60000,
-			// 	stopLossPrice: 58000,
-			// 	takeProfitPrice: 65000,
-			// 	quoteCurrency: "USDT",
-			// 	quoteTotal: 6000,
-			// 	pair: "BTCUSDT",
-			// 	side: TradeSide.LONG,
-			// 	status: TradeStatus.ACTIVE,
-			// 	platformName: TradingPlatform.BYBIT,
-			// 	estimatedProfit: 500,
-			// 	estimatedLoss: 200,
-			// });
+			await Trade.create({
+				userId: "test-user-123",
+				masterTradeId: (trade._id as any).toString(),
+				baseAsset: "BTC",
+				baseQuantity: 0.1,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				quoteCurrency: "USDT",
+				quoteTotal: 6000,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.ACTIVE,
+				platformName: TradingPlatform.BYBIT,
+				estimatedProfit: 500,
+				estimatedLoss: 200,
+			});
 
 			// Update SL only, TP should be removed since it's not provided
 			await tradeService.setMasterTradeStopLossOrTakeProfit({
