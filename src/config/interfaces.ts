@@ -1,3 +1,4 @@
+import { ITrade } from "../models/Trade";
 import { IAsset } from "../models/Asset";
 import { IUserTradingAccount } from "../models/UserTradingAccount";
 import { IUserTradingAccountBalance } from "../models/UserTradingAccountBalance";
@@ -164,4 +165,9 @@ export interface ITradeAggregate {
 	accummulatedTotalRisk: number;
 	accummulatedUnrealisedPnL: number;
 	accummulatedUnrealisedPnLPercentage: number;
+}
+
+export interface ICloseTradeEvent {
+	trade: ITrade;
+	qtyPercentToClose: number;
 }

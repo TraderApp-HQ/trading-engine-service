@@ -70,12 +70,14 @@ export enum OrderStatus {
 // Status of trades
 export enum TradeStatus {
 	ACTIVE = "ACTIVE",
+	ACTIVATING = "ACTIVATING",
 	CLOSED = "CLOSED",
 	PENDING = "PENDING",
 	PROCESSING = "PROCESSING",
 	PROCESSED = "PROCESSED",
 	FAILED = "FAILED",
 	CANCELED = "CANCELED",
+	BREAK_EVEN = "BREAK EVEN",
 }
 
 export enum OrderBatchStatus {
@@ -129,4 +131,12 @@ export enum TradeRisk {
 export enum TradingPlatformStatus {
 	ACTIVE = "ACTIVE",
 	INACTIVE = "INACTIVE",
+}
+
+export enum ErrorName {
+	VALIDATION = "ValidationError",
+	UNAUTHORIZED = "Unauthorized",
+	FORBIDDEN = "Forbidden",
+	NOT_FOUND = "NotFound",
+	INTERNAL_ERROR = "InternalError",
 }

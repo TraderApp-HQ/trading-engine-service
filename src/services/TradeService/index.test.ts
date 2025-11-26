@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { TradeService } from "./index";
 import { ICreateMasterTrade, IMasterTrade, MasterTrade } from "../../models/MasterTrade";
 import {
@@ -11,6 +13,7 @@ import {
 	CandleStick,
 } from "../../config/enums";
 import { IOHLCData } from "../../clients/BinanceFuturesClient";
+import { Trade } from "../../models/Trade";
 
 // Mock the SQS helper
 const mockPublishMessageToQueue = jest.fn().mockResolvedValue(undefined);
@@ -119,6 +122,8 @@ describe("TradeService", () => {
 				quoteCurrency: "USDT",
 				baseQuantity: 0.1,
 				quoteTotal: 6000,
+				originalBaseQuantity: 0.1,
+				originalQuoteTotal: 6000,
 				currentPrice: 60000,
 				entryPrice: 60000,
 				stopLossPrice: 58000,
@@ -135,6 +140,8 @@ describe("TradeService", () => {
 				],
 				estimatedProfit: 0,
 				estimatedLoss: 0,
+				originalEstimatedLoss: 0,
+				originalEstimatedProfit: 0,
 				candlestick: CandleStick.fifteenMin,
 				risk: TradeRisk.low,
 				category: Category.CRYPTO,
@@ -161,6 +168,10 @@ describe("TradeService", () => {
 				candlestick: CandleStick.fifteenMin,
 				risk: TradeRisk.low,
 				category: Category.CRYPTO,
+				originalBaseQuantity: 0.1,
+				originalQuoteTotal: 6000,
+				originalEstimatedLoss: 0,
+				originalEstimatedProfit: 0,
 			};
 
 			const masterTradeInputThree: ICreateMasterTrade = {
@@ -184,6 +195,10 @@ describe("TradeService", () => {
 				candlestick: CandleStick.fifteenMin,
 				risk: TradeRisk.low,
 				category: Category.CRYPTO,
+				originalBaseQuantity: 0.1,
+				originalQuoteTotal: 6000,
+				originalEstimatedLoss: 0,
+				originalEstimatedProfit: 0,
 			};
 
 			const [createdMasterTradeOne, createdMasterTradeTwo, createdMasterTradeThree] =
@@ -1038,6 +1053,447 @@ describe("TradeService", () => {
 			expect(updatedTrade?.pnl).toBeCloseTo(60, 2);
 			// pnlPercentage = (60 / 200) * 100 = 30%
 			expect(updatedTrade?.pnlPercentage).toBeCloseTo(30, 2);
+		});
+	});
+
+	describe("setMasterTradeStopLossOrTakeProfit", () => {
+		beforeEach(() => {
+			// Set up environment variables - match mapTradingPlatformToQueueUrl exactly
+			process.env.PROCESS_BYBIT_ORDERS_ACTIVATION_QUEUE = "https://sqs.test.bybit-activation";
+			process.env.PROCESS_BYBIT_STOP_LOSS_ORDERS_QUEUE = "https://sqs.test.bybit-sl";
+			process.env.PROCESS_BYBIT_TAKE_PROFIT_ORDERS_QUEUE = "https://sqs.test.bybit-tp";
+			process.env.PROCESS_BYBIT_CLOSE_TRADES_QUEUE = "https://sqs.test.bybit-close";
+			process.env.PROCESS_BYBIT_CANCEL_ORDERS_QUEUE = "https://sqs.test.bybit-cancel";
+		});
+
+		it("should update both stop loss and take profit prices", async () => {
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.ACTIVE,
+				supportedTradingPlatforms: [TradingPlatform.BYBIT],
+				estimatedProfit: 500,
+				estimatedLoss: 200,
+				defaultTradingPlatform: TradingPlatform.BYBIT,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			// Create user trade with platformName
+			await Trade.create({
+				userId: "test-user-123",
+				masterTradeId: (trade._id as any).toString(),
+				baseAsset: "BTC",
+				baseQuantity: 0.1,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				quoteCurrency: "USDT",
+				quoteTotal: 6000,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.ACTIVE,
+				platformName: TradingPlatform.BYBIT,
+				estimatedProfit: 500,
+				estimatedLoss: 200,
+			});
+
+			await tradeService.setMasterTradeStopLossOrTakeProfit({
+				masterTradeId: (trade._id as any).toString(),
+				stopLossPrice: 57000,
+				takeProfitPrice: 66000,
+			});
+
+			const updatedTrade = await MasterTrade.findById(trade._id);
+			expect(updatedTrade?.stopLossPrice).toBe(57000);
+			expect(updatedTrade?.takeProfitPrice).toBe(66000);
+
+			// Should publish to both SL and TP queues
+			expect(mockPublishMessageToQueue).toHaveBeenCalledTimes(2);
+
+			// Verify SL message
+			const slCall = mockPublishMessageToQueue.mock.calls[0][0];
+			expect(slCall.queueUrl).toBe("https://sqs.test.bybit-sl");
+			const slMessage = JSON.parse(slCall.message);
+			expect(slMessage.stopLossPrice).toBe(57000);
+
+			// Verify TP message
+			const tpCall = mockPublishMessageToQueue.mock.calls[1][0];
+			expect(tpCall.queueUrl).toBe("https://sqs.test.bybit-tp");
+			const tpMessage = JSON.parse(tpCall.message);
+			expect(tpMessage.takeProfitPrice).toBe(66000);
+		});
+
+		it("should remove take profit price when not provided and exists in DB", async () => {
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.ACTIVE,
+				supportedTradingPlatforms: [TradingPlatform.BYBIT],
+				estimatedProfit: 500,
+				estimatedLoss: 200,
+				defaultTradingPlatform: TradingPlatform.BYBIT,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			// Create user trade with platformName
+			await Trade.create({
+				userId: "test-user-123",
+				masterTradeId: (trade._id as any).toString(),
+				baseAsset: "BTC",
+				baseQuantity: 0.1,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				quoteCurrency: "USDT",
+				quoteTotal: 6000,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.ACTIVE,
+				platformName: TradingPlatform.BYBIT,
+				estimatedProfit: 500,
+				estimatedLoss: 200,
+			});
+
+			// Update SL only, TP should be removed since it's not provided
+			await tradeService.setMasterTradeStopLossOrTakeProfit({
+				masterTradeId: (trade._id as any).toString(),
+				stopLossPrice: 57000,
+				// takeProfitPrice omitted
+			});
+
+			const updatedTrade = await MasterTrade.findById(trade._id);
+			expect(updatedTrade?.stopLossPrice).toBe(57000);
+			expect(updatedTrade?.takeProfitPrice).toBeUndefined();
+
+			// Should publish to SL queue (1 call for SL) + TP queue with undefined (1 call for TP removal)
+			expect(mockPublishMessageToQueue).toHaveBeenCalledTimes(2);
+
+			// Verify TP removal message
+			const tpCall = mockPublishMessageToQueue.mock.calls[1][0];
+			expect(tpCall.queueUrl).toBe("https://sqs.test.bybit-tp");
+			const tpMessage = JSON.parse(tpCall.message);
+			expect(tpMessage.takeProfitPrice).toBeUndefined();
+		});
+
+		it("should not publish if SL price unchanged", async () => {
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.ACTIVE,
+				supportedTradingPlatforms: [TradingPlatform.BYBIT],
+				estimatedProfit: 500,
+				estimatedLoss: 200,
+				defaultTradingPlatform: TradingPlatform.BYBIT,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			await Trade.create({
+				userId: "test-user-123",
+				masterTradeId: (trade._id as any).toString(),
+				baseAsset: "BTC",
+				baseQuantity: 0.1,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				quoteCurrency: "USDT",
+				quoteTotal: 6000,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.ACTIVE,
+				platformName: TradingPlatform.BYBIT,
+				estimatedProfit: 500,
+				estimatedLoss: 200,
+			});
+
+			// Update with same SL price
+			await tradeService.setMasterTradeStopLossOrTakeProfit({
+				masterTradeId: (trade._id as any).toString(),
+				stopLossPrice: 58000, // Same as current
+				takeProfitPrice: 66000, // Different
+			});
+
+			// Should only publish TP queue (not SL since price unchanged)
+			expect(mockPublishMessageToQueue).toHaveBeenCalledTimes(1);
+			const tpCall = mockPublishMessageToQueue.mock.calls[0][0];
+			expect(tpCall.queueUrl).toBe("https://sqs.test.bybit-tp");
+		});
+
+		it("should throw error when updating non-active trade", async () => {
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.PENDING,
+				supportedTradingPlatforms: [TradingPlatform.BYBIT],
+				estimatedProfit: 0,
+				estimatedLoss: 0,
+				defaultTradingPlatform: TradingPlatform.BYBIT,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			await expect(
+				tradeService.setMasterTradeStopLossOrTakeProfit({
+					masterTradeId: (trade._id as any).toString(),
+					stopLossPrice: 57000,
+				})
+			).rejects.toThrow();
+		});
+	});
+
+	describe("closeActiveMasterTrade", () => {
+		it("should close active trade with 100% quantity", async () => {
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.ACTIVE,
+				supportedTradingPlatforms: [TradingPlatform.BINANCE],
+				estimatedProfit: 500,
+				estimatedLoss: 200,
+				defaultTradingPlatform: TradingPlatform.BINANCE,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			await tradeService.closeActiveMasterTrade({
+				masterTradeId: (trade._id as any).toString(),
+				qtyPercentToClose: 100,
+			});
+
+			const updatedTrade = await MasterTrade.findById(trade._id);
+			expect(updatedTrade?.status).toBe(TradeStatus.CLOSED);
+		});
+
+		it("should close active trade with 50% quantity (partial close)", async () => {
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 1,
+				quoteTotal: 60000,
+				currentPrice: 60000,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.ACTIVE,
+				supportedTradingPlatforms: [TradingPlatform.BINANCE],
+				estimatedProfit: 5000,
+				estimatedLoss: 2000,
+				defaultTradingPlatform: TradingPlatform.BINANCE,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			await tradeService.closeActiveMasterTrade({
+				masterTradeId: (trade._id as any).toString(),
+				qtyPercentToClose: 50,
+			});
+
+			const updatedTrade = await MasterTrade.findById(trade._id);
+			expect(updatedTrade?.baseQuantity).toBe(0.5);
+			expect(updatedTrade?.quoteTotal).toBe(30000);
+			expect(updatedTrade?.status).toBe(TradeStatus.BREAK_EVEN);
+		});
+	});
+
+	describe("breakEvenActiveMasterTrade", () => {
+		it("should move stop loss to entry price and close 50% of position", async () => {
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 1,
+				quoteTotal: 60000,
+				currentPrice: 61000,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.ACTIVE,
+				supportedTradingPlatforms: [TradingPlatform.BINANCE],
+				estimatedProfit: 5000,
+				estimatedLoss: 2000,
+				defaultTradingPlatform: TradingPlatform.BINANCE,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			await tradeService.breakEvenActiveMasterTrade((trade._id as any).toString());
+
+			const updatedTrade = await MasterTrade.findById(trade._id);
+			expect(updatedTrade?.stopLossPrice).toBe(60000); // Entry price
+			expect(updatedTrade?.baseQuantity).toBe(0.5); // 50% closed
+			expect(updatedTrade?.status).toBe(TradeStatus.BREAK_EVEN);
+		});
+	});
+
+	describe("triggerMasterTradeOrdersPlacement", () => {
+		it("should trigger orders placement for pending trade", async () => {
+			process.env.PROCESS_INCOMING_MASTER_TRADES_QUEUE = "test-queue-url";
+
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.PENDING,
+				supportedTradingPlatforms: [TradingPlatform.BINANCE],
+				estimatedProfit: 0,
+				estimatedLoss: 0,
+				defaultTradingPlatform: TradingPlatform.BINANCE,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			await tradeService.triggerMasterTradeOrdersPlacement((trade._id as any).toString());
+
+			const updatedTrade = await MasterTrade.findById(trade._id);
+			expect(updatedTrade?.status).toBe(TradeStatus.PROCESSING);
+			expect(mockPublishMessageToQueue).toHaveBeenCalled();
+		});
+	});
+
+	describe("cancelNoneActiveMasterTrade", () => {
+		it("should cancel pending trade", async () => {
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.PENDING,
+				supportedTradingPlatforms: [TradingPlatform.BINANCE],
+				estimatedProfit: 0,
+				estimatedLoss: 0,
+				defaultTradingPlatform: TradingPlatform.BINANCE,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			await tradeService.cancelNoneActiveMasterTrade((trade._id as any).toString());
+
+			const updatedTrade = await MasterTrade.findById(trade._id);
+			expect(updatedTrade?.status).toBe(TradeStatus.CANCELED);
+		});
+
+		it("should throw error when trying to cancel active trade", async () => {
+			const trade = await MasterTrade.create({
+				baseAsset: "BTC",
+				baseAssetLogoUrl: "logo.png",
+				quoteCurrency: "USDT",
+				baseQuantity: 0.1,
+				quoteTotal: 6000,
+				currentPrice: 60000,
+				entryPrice: 60000,
+				stopLossPrice: 58000,
+				takeProfitPrice: 65000,
+				ordersTriggerPrice: 59500,
+				targetOrdersAmountToFill: 100,
+				pair: "BTCUSDT",
+				side: TradeSide.LONG,
+				status: TradeStatus.ACTIVE,
+				supportedTradingPlatforms: [TradingPlatform.BINANCE],
+				estimatedProfit: 500,
+				estimatedLoss: 200,
+				defaultTradingPlatform: TradingPlatform.BINANCE,
+				candlestick: CandleStick.fifteenMin,
+				risk: TradeRisk.low,
+				category: Category.CRYPTO,
+			});
+
+			await expect(
+				tradeService.cancelNoneActiveMasterTrade((trade._id as any).toString())
+			).rejects.toThrow();
 		});
 	});
 });
