@@ -311,3 +311,36 @@ export async function getAllAccountTradingPlatforms(
 		next(error);
 	}
 }
+
+export async function updateMasterTradeTpAndSl(req: Request, res: Response, next: NextFunction) {
+	const tradeService = new TradeService();
+
+	try {
+		const { id } = req.params;
+		const stopLoss: number = parseInt(req.query.stopLoss as string);
+		const takeProfit: number = parseInt(req.query.takeProfit as string);
+
+		const updateData: {
+			masterTradeId: string;
+			stopLossPrice: number;
+			takeProfitPrice?: number;
+		} = {
+			masterTradeId: id,
+			stopLossPrice: stopLoss,
+		};
+		if (!isNaN(takeProfit)) {
+			updateData.takeProfitPrice = takeProfit;
+		}
+
+		await tradeService.setMasterTradeStopLossOrTakeProfit(updateData);
+
+		res.status(HttpStatus.OK).json(
+			apiResponseHandler({
+				type: ResponseType.SUCCESS,
+				message: ResponseMessage.TRADE_TP_SL,
+			})
+		);
+	} catch (error) {
+		next(error);
+	}
+}

@@ -8,6 +8,7 @@ import {
 	validateGetTradeByIdRequest,
 	validateGetTradeCurrentPriceRequest,
 	validateGetTradesRequest,
+	validateMasterTradeTpAndSlUpdateRequest,
 } from "../middlewares/TradeMiddleware";
 import {
 	createMasterTradesHandler,
@@ -19,6 +20,7 @@ import {
 	getTradeByIdHandler,
 	getTradeCurrentPrice,
 	getUserTradesHandler,
+	updateMasterTradeTpAndSl,
 } from "../controllers/TradeController";
 
 const router = Router();
@@ -40,5 +42,10 @@ router.get("/master-trade", validateGetTradesRequest, getMasterTradesHandler);
 router.get("/user-trade", validateGetTradesRequest, getUserTradesHandler);
 router.get("/master-trade/:id", validateGetTradeByIdRequest, getTradeByIdHandler);
 router.post("/master-trade", validateCreateTradeRequest, createMasterTradesHandler);
+router.patch(
+	"/master-trade/set-tp-sl/:id",
+	validateMasterTradeTpAndSlUpdateRequest,
+	updateMasterTradeTpAndSl
+);
 
 export default router;
