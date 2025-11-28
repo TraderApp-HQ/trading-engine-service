@@ -311,3 +311,127 @@ export async function getAllAccountTradingPlatforms(
 		next(error);
 	}
 }
+
+export async function updateMasterTradeTpAndSl(req: Request, res: Response, next: NextFunction) {
+	const tradeService = new TradeService();
+
+	try {
+		const { id } = req.params;
+		const stopLoss: number = parseInt(req.query.stopLoss as string);
+		const takeProfit: number = parseInt(req.query.takeProfit as string);
+
+		const updateData: {
+			masterTradeId: string;
+			stopLossPrice: number;
+			takeProfitPrice?: number;
+		} = {
+			masterTradeId: id,
+			stopLossPrice: stopLoss,
+		};
+		if (!isNaN(takeProfit)) {
+			updateData.takeProfitPrice = takeProfit;
+		}
+
+		await tradeService.setMasterTradeStopLossOrTakeProfit(updateData);
+
+		res.status(HttpStatus.OK).json(
+			apiResponseHandler({
+				type: ResponseType.SUCCESS,
+				message: ResponseMessage.TRADE_TP_SL,
+			})
+		);
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function closeActiveMasterTrade(req: Request, res: Response, next: NextFunction) {
+	const tradeService = new TradeService();
+
+	try {
+		const { id } = req.params;
+		const percentage: number = parseInt(req.query.percentage as string);
+
+		const updateData: {
+			masterTradeId: string;
+			qtyPercentToClose?: number;
+		} = {
+			masterTradeId: id,
+		};
+		if (!isNaN(percentage)) {
+			updateData.qtyPercentToClose = percentage;
+		}
+
+		await tradeService.closeActiveMasterTrade(updateData);
+
+		res.status(HttpStatus.OK).json(
+			apiResponseHandler({
+				type: ResponseType.SUCCESS,
+				message: ResponseMessage.CLOSE_TRADE,
+			})
+		);
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function cancelMasterTrade(req: Request, res: Response, next: NextFunction) {
+	const tradeService = new TradeService();
+
+	try {
+		const { id } = req.params;
+
+		await tradeService.cancelNoneActiveMasterTrade(id);
+
+		res.status(HttpStatus.OK).json(
+			apiResponseHandler({
+				type: ResponseType.SUCCESS,
+				message: ResponseMessage.CANCEL_TRADE,
+			})
+		);
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function breakEvenMasterTrade(req: Request, res: Response, next: NextFunction) {
+	const tradeService = new TradeService();
+
+	try {
+		const { id } = req.params;
+
+		await tradeService.breakEvenActiveMasterTrade(id);
+
+		res.status(HttpStatus.OK).json(
+			apiResponseHandler({
+				type: ResponseType.SUCCESS,
+				message: ResponseMessage.TRADE_BREAK_EVEN,
+			})
+		);
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function triggerMasterTradeOrderPlacement(
+	req: Request,
+	res: Response,
+	next: NextFunction
+) {
+	const tradeService = new TradeService();
+
+	try {
+		const { id } = req.params;
+
+		await tradeService.triggerMasterTradeOrdersPlacement(id);
+
+		res.status(HttpStatus.OK).json(
+			apiResponseHandler({
+				type: ResponseType.SUCCESS,
+				message: ResponseMessage.TRADE_ORDER_TRIGGER,
+			})
+		);
+	} catch (error) {
+		next(error);
+	}
+}

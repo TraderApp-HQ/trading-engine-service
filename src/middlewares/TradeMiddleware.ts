@@ -276,3 +276,117 @@ export async function validateAccountTradingPlatformsRequest(
 		next(err);
 	}
 }
+
+export async function validateMasterTradeTpAndSlUpdateRequest(
+	req: Request,
+	res: Response,
+	next: NextFunction
+) {
+	try {
+		// check accessToken && Admin status
+		await checkAdmin(req);
+
+		// Joi schema to validate request param
+		const paramsSchema = Joi.object({
+			id: Joi.string().required().label("Master Trade ID"),
+		});
+
+		// Joi schema to validate request query
+		const querySchema = Joi.object({
+			stopLoss: Joi.number().min(0).positive().required().label("Stop Loss Price"),
+			takeProfit: Joi.number().min(0).positive().optional().label("Take Profit Price"),
+		});
+
+		const paramsResult = paramsSchema.validate(req.params, { abortEarly: true });
+		const queryResult = querySchema.validate(req.query, { abortEarly: true });
+
+		if (paramsResult.error || queryResult.error) {
+			const validationError = paramsResult.error ?? queryResult.error;
+			if (validationError) {
+				validationError.message = validationError.message.replace(/\"/g, "");
+
+				next(validationError);
+			}
+		}
+
+		req.params = paramsResult.value;
+		req.query = queryResult.value;
+
+		next();
+	} catch (err: any) {
+		next(err);
+	}
+}
+
+export async function validateCloseActiveMasterTradeRequest(
+	req: Request,
+	res: Response,
+	next: NextFunction
+) {
+	try {
+		// check accessToken && Admin status
+		await checkAdmin(req);
+
+		// Joi schema to validate request param
+		const paramsSchema = Joi.object({
+			id: Joi.string().required().label("Master Trade ID"),
+		});
+
+		// Joi schema to validate request query
+		const querySchema = Joi.object({
+			percentage: Joi.number()
+				.min(0)
+				.positive()
+				.optional()
+				.label("Trade Percentage Quantity"),
+		});
+
+		const paramsResult = paramsSchema.validate(req.params, { abortEarly: true });
+		const queryResult = querySchema.validate(req.query, { abortEarly: true });
+
+		if (paramsResult.error || queryResult.error) {
+			const validationError = paramsResult.error ?? queryResult.error;
+			if (validationError) {
+				validationError.message = validationError.message.replace(/\"/g, "");
+
+				next(validationError);
+			}
+		}
+
+		req.params = paramsResult.value;
+		req.query = queryResult.value;
+
+		next();
+	} catch (err: any) {
+		next(err);
+	}
+}
+
+export async function validateMasterTradeUpdateRequest(
+	req: Request,
+	res: Response,
+	next: NextFunction
+) {
+	try {
+		// check accessToken && Admin status
+		await checkAdmin(req);
+
+		// Joi schema to validate request param
+		const paramsSchema = Joi.object({
+			id: Joi.string().required().label("Master Trade ID"),
+		});
+
+		const { error, value } = paramsSchema.validate(req.params, { abortEarly: true });
+
+		if (error) {
+			error.message = error.message.replace(/\"/g, "");
+			next(error);
+		}
+
+		req.params = value;
+
+		next();
+	} catch (err: any) {
+		next(err);
+	}
+}

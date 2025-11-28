@@ -52,6 +52,11 @@ export const ResponseMessage = {
 	GET_CURRENCIES: "All Currency Fetched Successfully",
 	GET_EXCHANGES: "Supported trading platform Fetched Successfully",
 	TRADE_PRICE: "Trade Current Price Fetched Successfully",
+	TRADE_TP_SL: "Trade TP/SL Updated Successfully",
+	CLOSE_TRADE: "Trade Closed Successfully",
+	CANCEL_TRADE: "Trade Cancelled Successfully",
+	TRADE_BREAK_EVEN: "Trade Break Even Successful",
+	TRADE_ORDER_TRIGGER: "Trade Order Triggered Successfully",
 };
 
 export const ROUTES = {
