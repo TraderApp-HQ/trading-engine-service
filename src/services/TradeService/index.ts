@@ -583,13 +583,21 @@ export class TradeService {
 			this.processMasterTradeWhenTakeProfitIsReached(masterTrade, candle),
 		]);
 
-		console.log(
-			`Updated ACTIVE master trade ${
-				masterTrade.pair
-			} - Price: ${closePrice}, PNL: ${pnlAmount.toFixed(2)} (${pnlPercentOfRisk.toFixed(
-				2
-			)}%)`
-		);
+		// Log at custom interval (default: every 10 minutes)
+		const LOG_INTERVAL_MINUTES = 10; // Change this to 10, 15, 30, 60, etc.
+		const currentDate = new Date(candle.closeTime);
+		const currentMinutes = currentDate.getMinutes();
+
+		if (currentMinutes % LOG_INTERVAL_MINUTES === 0) {
+			console.log(`Updated ACTIVE master trade`, {
+				pair: masterTrade.pair,
+				closePrice,
+				pnlAmount: pnlAmount.toFixed(2),
+				pnlPercentOfRisk: pnlPercentOfRisk.toFixed(2),
+				masterTradeId: masterTrade._id,
+				currentDate,
+			});
+		}
 	}
 
 	/**
@@ -778,16 +786,34 @@ export class TradeService {
 				});
 
 				console.log(
-					`✅ STOP LOSS PRICE REACHED - trade ${
-						masterTrade.pair
-					} CLOSED - Trigger and published to queue: ${masterTrade.ordersTriggerPrice}, ${
-						masterTrade.side === TradeSide.LONG ? "Low" : "High"
-					}: ${masterTrade.side === TradeSide.LONG ? lowPrice : highPrice}`
+					`=================== ✅ MASTER TRADE STOP LOSS PRICE REACHED AND PROCESSED ======================`,
+					{
+						masterTradeId: masterTrade._id,
+						pair: masterTrade.pair,
+						side: masterTrade.side,
+						stopLossPrice: masterTrade.stopLossPrice,
+						lowPrice,
+						highPrice,
+						candleClosePrice: candle.close,
+						candleOpenTime: candle.openTime,
+						candleCloseTime: candle.closeTime,
+					}
 				);
 			} catch (error) {
 				console.log(
 					"=================== Error occurred while processing master trade when stop loss is reached ======================",
-					error
+					error,
+					{
+						masterTradeId: masterTrade._id,
+						pair: masterTrade.pair,
+						side: masterTrade.side,
+						stopLossPrice: masterTrade.stopLossPrice,
+						lowPrice,
+						highPrice,
+						candleClosePrice: candle.close,
+						candleOpenTime: candle.openTime,
+						candleCloseTime: candle.closeTime,
+					}
 				);
 				throw error;
 			}
@@ -831,16 +857,34 @@ export class TradeService {
 				});
 
 				console.log(
-					`✅ TAKE PROFIT PRICE REACHED - trade ${
-						masterTrade.pair
-					} CLOSED - Trigger and published to queue: ${masterTrade.takeProfitPrice}, ${
-						masterTrade.side === TradeSide.LONG ? "Low" : "High"
-					}: ${masterTrade.side === TradeSide.LONG ? lowPrice : highPrice}`
+					`=================== ✅ MASTER TRADE TAKE PROFIT PRICE REACHED AND PROCESSED ======================`,
+					{
+						masterTradeId: masterTrade._id,
+						pair: masterTrade.pair,
+						side: masterTrade.side,
+						takeProfitPrice: masterTrade.takeProfitPrice,
+						lowPrice,
+						highPrice,
+						candleClosePrice: candle.close,
+						candleOpenTime: candle.openTime,
+						candleCloseTime: candle.closeTime,
+					}
 				);
 			} catch (error) {
 				console.log(
 					"=================== Error occurred while processing master trade when take profit is reached ======================",
-					error
+					error,
+					{
+						masterTradeId: masterTrade._id,
+						pair: masterTrade.pair,
+						side: masterTrade.side,
+						takeProfitPrice: masterTrade.takeProfitPrice,
+						lowPrice,
+						highPrice,
+						candleClosePrice: candle.close,
+						candleOpenTime: candle.openTime,
+						candleCloseTime: candle.closeTime,
+					}
 				);
 				throw error;
 			}
