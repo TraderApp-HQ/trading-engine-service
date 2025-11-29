@@ -535,6 +535,8 @@ export class BybitFuturesClient {
 
 	/**
 	 * Fetch futures candles/klines for multiple pairs
+	 * Fetches last 5 1-minute candles, returns highest high and lowest low across all 5
+	 * Open, close, openTime, closeTime, and volume are from the latest candle
 	 * Public endpoint - no authentication required
 	 */
 	async fetchBybitFuturesCandles(input: IFetchBybitFuturesCandlesInput): Promise<IOHLCData[]> {
@@ -548,7 +550,7 @@ export class BybitFuturesClient {
 							category: "linear",
 							symbol,
 							interval: input.interval || "1", // Default to 1 minute
-							limit: 1, // Get only the latest candle
+							limit: 5, // Get last 5 candles
 						},
 					});
 
@@ -564,18 +566,36 @@ export class BybitFuturesClient {
 						throw new Error(`No candle data found for ${symbol}`);
 					}
 
-					// Get the most recent candle
-					const latestCandle = klineData.list[0];
+					// klineData.list is in ascending order, so latest candle is at the end
+					const candles = klineData.list;
+					const latestCandle = candles[candles.length - 1];
+
+					// Calculate highest high and lowest low across all 5 candles
+					let highestHigh = parseFloat(candles[0][2]); // high is at index 2
+					let lowestLow = parseFloat(candles[0][3]); // low is at index 3
+
+					for (const candle of candles) {
+						const high = parseFloat(candle[2]);
+						const low = parseFloat(candle[3]);
+
+						if (high > highestHigh) {
+							highestHigh = high;
+						}
+						if (low < lowestLow) {
+							lowestLow = low;
+						}
+					}
 
 					return {
 						symbol,
-						open: latestCandle[1],
-						high: latestCandle[2],
-						low: latestCandle[3],
-						close: latestCandle[4],
-						openTime: parseInt(latestCandle[0]),
-						closeTime: parseInt(latestCandle[0]) + parseInt(input.interval) * 60 * 1000, // Approximate
-						volume: latestCandle[5],
+						open: latestCandle[1], // open from latest candle
+						high: highestHigh.toString(), // highest high across all 5
+						low: lowestLow.toString(), // lowest low across all 5
+						close: latestCandle[4], // close from latest candle
+						openTime: parseInt(latestCandle[0]), // open time from latest candle
+						closeTime:
+							parseInt(latestCandle[0]) + parseInt(input.interval || "1") * 60 * 1000, // close time of latest candle
+						volume: latestCandle[5], // volume from latest candle
 					};
 				} catch (error: any) {
 					console.error(`Error fetching candles for ${symbol}:`, error.message);

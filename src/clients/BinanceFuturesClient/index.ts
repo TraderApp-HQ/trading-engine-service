@@ -406,6 +406,11 @@ export class BinanceFuturesClient {
 		}
 	}
 
+	/**
+	 * Fetch futures candles/klines for multiple pairs
+	 * Fetches last 5 1-minute candles, returns highest high and lowest low across all 5
+	 * Open, close, openTime, closeTime, and volume are from the latest candle
+	 */
 	async fetchBinanceFuturesCandles(
 		input: IFetchBinanceFuturesCandlesInput
 	): Promise<IOHLCData[]> {
@@ -418,21 +423,41 @@ export class BinanceFuturesClient {
 						interval:
 							(input.interval as CandleChartInterval_LT) ||
 							("1m" as CandleChartInterval_LT),
-						limit: 1, // Get only the latest candle
+						limit: 5, // Get only the latest candle
 					});
 
-					// Get the most recent candle
+					if (!candles || candles.length === 0) {
+						throw new Error(`No candle data found for ${symbol}`);
+					}
+
+					// Get the most recent candle (last one)
 					const latestCandle = candles[candles.length - 1];
+
+					// Calculate highest high and lowest low across all 5 candles
+					let highestHigh = parseFloat(candles[0].high);
+					let lowestLow = parseFloat(candles[0].low);
+
+					for (const candle of candles) {
+						const high = parseFloat(candle.high);
+						const low = parseFloat(candle.low);
+
+						if (high > highestHigh) {
+							highestHigh = high;
+						}
+						if (low < lowestLow) {
+							lowestLow = low;
+						}
+					}
 
 					return {
 						symbol,
-						open: latestCandle.open,
-						high: latestCandle.high,
-						low: latestCandle.low,
-						close: latestCandle.close,
-						openTime: latestCandle.openTime,
-						closeTime: latestCandle.closeTime,
-						volume: latestCandle.volume,
+						open: latestCandle.open, // open from latest candle
+						high: highestHigh.toString(), // highest high across all 5
+						low: lowestLow.toString(), // lowest low across all 5
+						close: latestCandle.close, // close from latest candle
+						openTime: latestCandle.openTime, // open time from latest candle
+						closeTime: latestCandle.closeTime, // close time from latest candle
+						volume: latestCandle.volume, // volume from latest candle
 					};
 				} catch (error: any) {
 					console.error(`Error fetching candles for ${symbol}:`, error.message);
